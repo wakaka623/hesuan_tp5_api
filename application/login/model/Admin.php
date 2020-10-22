@@ -11,15 +11,15 @@ class Admin extends Model
 
     // 用户不存在
     if (!$user) {
-      array_push($state, 'code', '0');
+      $state['code'] = '0';
     } else {
       if($user['password'] == $pwd) {
         // session('username',$user['username']);
         // session('uid',$user['id']);
-        array_push($state, 'code', '1');
-        array_push($state, 'user', $user);
+        $state['code'] = '1';
+        array_push($state, $user);
       } else {
-        array_push($state, 'code', '2');
+        $state['code'] = '2';
       }
     }
 

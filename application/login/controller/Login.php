@@ -11,6 +11,18 @@ class Login extends Controller
     $isPost = request()->isPost();
     $err = array('statusCode'=>'0');
 
+    session_start();
+
+    setcookie("admin", true, time()+3600);
+    session('admin', true);
+
+    $sessionName = session_name();
+    //  取得 Session ID
+    // $sessionID = $_GET[$sessionName];
+    
+    var_dump(cookie('admin'));
+    return cookie('admin');
+
 		if(!$isPost) return;
 
     $admin = new Admin();
@@ -20,16 +32,16 @@ class Login extends Controller
     if (!$name || !$psw) return json_encode($err);
 
     $result = $admin->login($name, $psw);
-    
+
     // 密码错误或用户不存在
     if ($result['code'] === '0' || $result['code'] === '2') {
-      array_push($err, 'data', null);
       return json_encode($err);
-    } else {
-      // $this->success('信息正确，正在为您跳转','index/index');
-      $arr = array('token'=>$num['token']);
-      return json_encode($arr);
     }
+    
+    // 登陆成功返回token
+    // $arr = array('token'=>$num['token']);
+    // return json_encode($arr);
+    
+    
 	}
-	// return $this->fetch('login');
 }
