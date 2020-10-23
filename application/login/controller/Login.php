@@ -11,18 +11,6 @@ class Login extends Controller
     $isPost = request()->isPost();
     $err = array('statusCode'=>'0');
 
-    session_start();
-
-    setcookie("admin", true, time()+3600);
-    session('admin', true);
-
-    $sessionName = session_name();
-    //  取得 Session ID
-    // $sessionID = $_GET[$sessionName];
-    
-    var_dump(cookie('admin'));
-    return cookie('admin');
-
 		if(!$isPost) return;
 
     $admin = new Admin();
@@ -39,9 +27,14 @@ class Login extends Controller
     }
     
     // 登陆成功返回token
-    // $arr = array('token'=>$num['token']);
-    // return json_encode($arr);
-    
-    
+    setcookie("user", $result['username'], time()+3600, '/');
+    session($result['username'], '1');
+
+
+    $data = array(
+      'statusCode' => '1',
+      'username' => $result['username']
+    );
+    return json_encode($data);
 	}
 }

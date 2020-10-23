@@ -15,25 +15,25 @@ class Info extends Controller
       exit;
     }
     
-    $token = $request->post('token');
+    // 判断是否有post参数
+    $par = $request->post('token');
+    if (!$par) {
+      return json_encode(array('code'=>'0', 'message'=>'未登录'));
+    }
 
-    // $date=array(
-    //     'token'=>$token
-    // );
-    // return json_encode($date,true);
     
-    if ($token) {
-      $token = request()->param()['token'];
-    } else {
-      return json_encode(array('code'=>'0'));
+    // 通过cookie查询session
+    $u = cookie('user');
+    if (session($u) != '1') {
+      return json_encode(array('code'=>'0', 'message'=>'登陆已过期或未登陆'));
     }
 
 
+    // 登陆成功返回用户信息
     $user = new User();
-    $info = $user->query($token);
-    
+    $info = $user->query($u);
 
-    if ($info === 1) return json_encode(array('code'=>'0'));
+    if ($info === 1) return json_encode(array('code'=>'0', 'message'=>'该用户不存在'));
     
     return json_encode($info);
   }

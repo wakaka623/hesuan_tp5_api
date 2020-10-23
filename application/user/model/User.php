@@ -6,9 +6,9 @@ use think\Db;
 
 class User extends Model
 {
-	public function query($token){
+	public function query($name){
     $db = DB::name('user_info');
-    $user = $db->where('token','=',$token)->find();
+    $user = $db->where('name','=',$name)->find();
     
     
 
