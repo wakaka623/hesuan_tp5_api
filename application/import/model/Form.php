@@ -13,9 +13,21 @@ class Form extends Model
   public function getColumns($tableName) {
     $query = 'select COLUMN_NAME,column_comment from INFORMATION_SCHEMA.Columns where table_name="' . $tableName . '" and table_schema="hesuan_admin"';
 
+    // [{COLUMN_NAME: '', column_comment: ''}]
     $columns = Db::query($query);
 
-    return $columns;
+
+    $arr = [];
+    // [{COLUMN_NAME: column_comment}]
+    foreach ($columns as $key => $value) {
+      $ke=$value['COLUMN_NAME'];
+      $val=$value['column_comment'];
+      $arr[$ke]=$val;
+    }
+
+    // exit;
+
+    return $arr;
   }
 
   /**
