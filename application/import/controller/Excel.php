@@ -16,8 +16,42 @@ require_once Env::get('root_path') . 'extend\phpexcel\PHPExcel.php';
 
 class Excel extends Controller
 {
-  //获取毫秒时间戳
-  function msectime(){
+  /**
+   * 删除指定文件
+   * @method
+   */
+  public function delfile($dir) {
+    // $dir = Env::get('root_path') . 'public\uploads\\';
+
+    //先删除目录下的文件：
+    $dh = opendir($dir);
+
+    while ($file = readdir($dh)) {
+      if($file != "." && $file != "..") {
+        $fullpath = $dir."/".$file;
+        if(!is_dir($fullpath)) {
+          unlink($fullpath);
+        } else {
+          $this->delfile($fullpath);
+        }
+      }
+    }
+  
+    closedir($dh);
+
+    //删除当前文件夹：
+    if(rmdir($dir)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * 获取时间戳毫秒单位
+   * @method
+   */
+  public function msectime(){
     list($msec, $sec) = explode(' ', microtime());
     $msectime = (float)sprintf('%.0f', (floatval($msec) + floatval($sec)) * 1000);
     return $msectime;
@@ -32,6 +66,16 @@ class Excel extends Controller
     if(!$isPost) return;
 
     $file = request()->file('file');
+    $dbName = request()->post('library');
+
+    if (!$file || !$dbName) {
+      return json_encode(array(
+        'code' => '0',
+        'message' => '0'
+      ));
+    }
+
+
 
     $path = Env::get('root_path') . 'public\uploads';   // 保存路径
 
@@ -83,24 +127,19 @@ class Excel extends Controller
 
     $form = new Form();
     
+    unset($info);   // 关闭指针
+    $this->delfile($path);   // 删除文件
+    // rmdir($filename);
     
-    return json_encode($form->import($data));
-
-
-
-    // $a = $form->import($data);
-    
-    exit;
-
-    // var_dump($data);
+    return json_encode($form->import($dbName, $data));
 
   }
 
   /**
-   * 下载表
+   * 下载选定数据（前端选定数据，转化excel）
    */
   public function download() {
-    
+
     $isPost = request()->isPost();
 
     if (!$isPost) return;
@@ -145,8 +184,8 @@ class Excel extends Controller
     // ->setCategory("result file");  //类别
 
     //设置单元格宽度
-    $objPHPExcel->getActiveSheet()->getColumnDimension('A')->setWidth(25);
-    $objPHPExcel->getActiveSheet()->getColumnDimension('B')->setWidth(25);
+    // $objPHPExcel->getActiveSheet()->getColumnDimension('A')->setWidth(25);
+    // $objPHPExcel->getActiveSheet()->getColumnDimension('B')->setWidth(25);
     
 
     //设置当前的表格
@@ -191,12 +230,30 @@ class Excel extends Controller
 
     // 获取当前时间戳
     $time = $this->msectime();
+
+    $path = Env::get('root_path') . 'public\uploads\\';   // 保存路径
+    $url = request()->domain() . '/tp5/public/uploads/';   // 访问路径
+
+    // 查找文件夹，如果文件夹不存在创建改目录
+    if (!is_dir($path)) {
+      mkdir($path);
+    } else {
+      $this->delfile($path);   // 删除文件
+      mkdir($path);          // 创建文件
+    }
+    clearstatcache();   // 清除is_dir()方法缓存
     
-    $path = Env::get('root_path') . 'public\uploads\\' . $time . '.xls';   // 保存路径
 
-    $objWriter->save($path);
+    $objWriter->save($path . $time . '.xls');
 
-    return 'http://localhost/tp5/public/uploads/' . $time . '.xls';
+
+    $data = [
+      'code' => '1',
+      'message' => '导出成功',
+      'data' => $url . $time . '.xls'
+    ];
+
+    return json_encode($data);
   }
 
   /**

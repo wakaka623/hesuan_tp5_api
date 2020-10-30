@@ -44,9 +44,9 @@ class Form extends Model
   /**
    * 导入表
    */
-	public function import($data) {
-    // 查询 ruida_fund_reconciliation 表所有字段和备注
-    $columns = Db::query('select COLUMN_NAME,column_comment from INFORMATION_SCHEMA.Columns where table_name="ruida_fund_reconciliation" and table_schema="hesuan_admin"');
+	public function import($dbName, $data) {
+    // 查询 $dbName 表所有字段和备注
+    $columns = Db::query('select COLUMN_NAME,column_comment from INFORMATION_SCHEMA.Columns where table_name="' . $dbName . '" and table_schema="hesuan_admin"');
 
     
     // 给excel数据增加对应的字段名
