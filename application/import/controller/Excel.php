@@ -13,6 +13,7 @@ use think\Db;
 require_once Env::get('root_path') . 'extend\phpexcel\PHPExcel.php';
 // require_once Env::get('root_path') . 'extend\phpexcel\PHPExcel\IOFactory.php';
 
+@ini_set("memory_limit",'-1');
 
 class Excel extends Controller
 {
@@ -108,7 +109,7 @@ class Excel extends Controller
     $sheet = $PHPExcel->getActiveSheet(0);    // 获得sheet
     $highestRow = $sheet->getHighestRow();    // 取得共有数据数
     $data = $sheet->toArray();
-    
+
 
     // 拿出标题栏
     $header = $data[0];
@@ -125,11 +126,16 @@ class Excel extends Controller
       }
     }
 
+    // 删除数据标题栏
+    array_splice($data, 0, 1);
+
     $form = new Form();
     
     unset($info);   // 关闭指针
     $this->delfile($path);   // 删除文件
     // rmdir($filename);
+
+    // return json_encode($data);
     
     return json_encode($form->import($dbName, $data));
 
@@ -301,6 +307,9 @@ class Excel extends Controller
     $form = new Form();
 
     $data = $form->getTableData($tableName);
+
+    // 对数据按id大小排序
+    return json_encode($data);
 
     array_shift($data);
 

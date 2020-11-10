@@ -34,9 +34,12 @@ class Form extends Model
    * 查找表数据
    */
   public function getTableData($tableName) {
-    $query = 'SELECT * FROM ' . $tableName;
+    // 根据id正序导出数据
+    $query = 'SELECT * FROM ' . $tableName . ' order by id';
 
     $data = Db::query($query);
+
+    // $data = DB::name($tableName)->select();
 
     return $data;
   }
