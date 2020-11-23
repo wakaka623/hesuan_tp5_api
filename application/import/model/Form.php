@@ -10,7 +10,8 @@ class Form extends Model
   /**
    * 查找表字段
    */
-  public function getColumns($tableName) {
+  public function getColumns($tableName) 
+  {
     $query = 'select COLUMN_NAME,column_comment from INFORMATION_SCHEMA.Columns where table_name="' . $tableName . '" and table_schema="hesuan_admin"';
 
     // [{COLUMN_NAME: '', column_comment: ''}]
@@ -33,7 +34,8 @@ class Form extends Model
   /**
    * 查找表数据
    */
-  public function getTableData($tableName) {
+  public function getTableData($tableName) 
+  {
     // 根据id正序导出数据
     $query = 'SELECT * FROM ' . $tableName . ' order by id';
 

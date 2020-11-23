@@ -18,6 +18,159 @@ require_once Env::get('root_path') . 'extend\phpexcel\PHPExcel.php';
 class Excel extends Controller
 {
   /**
+   * 给Excel表格添加样式
+   * @method
+   */
+  private function excel_add_style($objPHPExcel, $endRow, $endColumn) {
+    $tableEndIndex = $endRow . $endColumn;  // 表格终端的索引位
+
+    // 标题栏加粗
+    $objPHPExcel
+      ->getActiveSheet()
+      ->getStyle('A1:' . $endRow . '1')
+      ->getFont()
+      ->setBold(true); //字体加粗
+
+
+
+    // 设置所有单元格宽度
+    // 1个中文 宽度 -> 3
+    // 一个数字、字母 宽度 -> 1
+
+    // 所有单元格添加边框
+    $styleThinBlackBorderOutline = array(
+      'borders' => array(
+        'allborders' => array(   //设置全部边框
+          'style' => \PHPExcel_Style_Border::BORDER_THIN  //粗的是thick
+        ),
+      ),
+    );
+    $objPHPExcel->getActiveSheet()->getStyle('A1:' . $tableEndIndex)->applyFromArray($styleThinBlackBorderOutline);
+
+    // 所有单元格居中
+    $objPHPExcel
+      ->getActiveSheet()
+      ->getStyle('A1:' . $tableEndIndex)
+      ->getAlignment()
+      ->setVertical(\PHPExcel_Style_Alignment::VERTICAL_CENTER)
+      ->setHorizontal(\PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+
+
+    // 设置所有字体
+    $objPHPExcel
+      ->getActiveSheet()
+      ->getStyle('A1:' . $tableEndIndex)
+      ->getFont()
+      ->setSize(9)
+      ->setName('宋体');
+  }
+
+  /**
+   * 数据转excel
+   * @method
+   */
+  private function data_into_excel($data)
+  {
+    $selRowLeng = count($data[0]);
+    $excelRow = array(     // 表格标题栏坐标
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 
+      'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 
+      'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD',
+      'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN',
+      'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX',
+      'AY', 'AZ'
+    );
+
+    if ($selRowLeng > count($excelRow)) {
+      return json_encode(array(
+        'code' => '0',
+        'message' => '表格列出超出最大值'
+      ));
+    }
+
+
+    $objPHPExcel = new \PHPExcel();
+    
+    
+
+    /*右键属性所显示的信息*/
+    // $objPHPExcel->getProperties()->setCreator("钧一")  //作者
+    // ->setLastModifiedBy("钧一")  //最后一次保存者
+    // ->setTitle('报备数据')  //标题
+    // ->setSubject('数据EXCEL导出') //主题
+    // ->setDescription('导出数据')  //描述
+    // ->setKeywords("excel")   //标记
+    // ->setCategory("result file");  //类别
+
+    
+
+    //设置当前的表格
+    $objPHPExcel->setActiveSheetIndex(0);
+    // 把数据转化对应表内容
+    foreach ($data as $key => $value) {
+      $letterKey = 0;
+      
+      foreach ($value as $k => $v) {
+        $cell = $excelRow[$letterKey] . ($key + 1);
+        
+        $objPHPExcel->getActiveSheet()
+          // ->setCellValue($cell, ' ' . $v);
+          // 按指定格式写入数据
+          ->setCellValueExplicit($cell, $v, \PHPExcel_Cell_DataType::TYPE_STRING);
+
+        $letterKey++;
+      }
+
+    }
+
+    // 给excel表格添加样式
+    $excelEndColumn = count($data);    // 表格列最终索引
+    $excelEndRow = $excelRow[$selRowLeng - 1];  // 表格行最终索引
+    $this->excel_add_style($objPHPExcel, $excelEndRow, $excelEndColumn);
+
+      
+
+
+    //设置当前的表格
+    $objPHPExcel->setActiveSheetIndex(0);
+
+    $objWriter = \PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
+    ob_end_clean();
+
+    
+    // $filename = '报备数据.xls';
+    // header('Pragma:public');
+
+    // header('Content-Type:application/x-msexecl;name="'.$filename.'"');
+    // header('Content-Disposition:inline;filename="'.$filename.'"');
+
+    // return 'http://localhost/tp5/public/uploads/20201029/b7e7a16cdab572ea2d3e33863ec46738.xlsx';
+
+    // 获取当前时间戳
+    $time = $this->msectime();
+
+    $path = Env::get('root_path') . 'public\uploads\\';   // 保存路径
+    $url = request()->domain() . '/tp5/public/uploads/';   // 访问路径
+
+    // 查找文件夹，如果文件夹不存在创建改目录
+    if (!is_dir($path)) {
+      mkdir($path);
+    } else {
+      $this->delfile($path);   // 删除文件
+      mkdir($path);          // 创建文件
+    }
+    clearstatcache();   // 清除is_dir()方法缓存
+    
+
+    $objWriter->save($path . $time . '.xls');
+
+    return [
+      'url' => $url,
+      'time' => $time
+    ];
+  }
+
+  /**
    * 删除指定文件
    * @method
    */
@@ -142,7 +295,8 @@ class Excel extends Controller
   }
 
   /**
-   * 下载选定数据（前端选定数据，转化excel）
+   * 导出数据
+   * 下载数据（前端选定数据，转化excel）
    */
   public function download() {
 
@@ -160,98 +314,11 @@ class Excel extends Controller
     }
 
 
-    $selRowLeng = count($selectData[0]);
-    $excelRow = array(
-      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 
-      'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 
-      'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD',
-      'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN',
-      'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX',
-      'AY', 'AZ'
-    );
-
-    if ($selRowLeng > count($excelRow)) {
-      return json_encode(array(
-        'code' => '0',
-        'message' => '表格列出超出最大值'
-      ));
-    }
-
-
-    $objPHPExcel = new \PHPExcel();
-
-    /*右键属性所显示的信息*/
-    // $objPHPExcel->getProperties()->setCreator("钧一")  //作者
-    // ->setLastModifiedBy("钧一")  //最后一次保存者
-    // ->setTitle('报备数据')  //标题
-    // ->setSubject('数据EXCEL导出') //主题
-    // ->setDescription('导出数据')  //描述
-    // ->setKeywords("excel")   //标记
-    // ->setCategory("result file");  //类别
-
-    //设置单元格宽度
-    // $objPHPExcel->getActiveSheet()->getColumnDimension('A')->setWidth(25);
-    // $objPHPExcel->getActiveSheet()->getColumnDimension('B')->setWidth(25);
-    
-
-    //设置当前的表格
-    $objPHPExcel->setActiveSheetIndex(0);
-    // 对表格输入内容
-    foreach ($selectData as $key => $value) {
-      $letterKey = 0;
-      
-      foreach ($value as $k => $v) {
-        $cell = $excelRow[$letterKey] . ($key + 1);
-        
-        $objPHPExcel->getActiveSheet()
-          ->setCellValue($cell, $v);
-
-        $letterKey++;
-      }
-
-    }
-
-
-
-    // 设置表格第一行显示内容
-    // $objPHPExcel->getActiveSheet()
-    //     ->setCellValue('A1', 'ID')
-    //     ->setCellValue('B1', '名称');
-
-
-    //设置当前的表格
-    $objPHPExcel->setActiveSheetIndex(0);
-
-    $objWriter = \PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
-    ob_end_clean();
+    $req = $this->data_into_excel($selectData);
+    $url = $req['url'];
+    $time = $req['time'];
 
     
-    // $filename = '报备数据.xls';
-    // header('Pragma:public');
-
-    // header('Content-Type:application/x-msexecl;name="'.$filename.'"');
-    // header('Content-Disposition:inline;filename="'.$filename.'"');
-
-    // return 'http://localhost/tp5/public/uploads/20201029/b7e7a16cdab572ea2d3e33863ec46738.xlsx';
-
-    // 获取当前时间戳
-    $time = $this->msectime();
-
-    $path = Env::get('root_path') . 'public\uploads\\';   // 保存路径
-    $url = request()->domain() . '/tp5/public/uploads/';   // 访问路径
-
-    // 查找文件夹，如果文件夹不存在创建改目录
-    if (!is_dir($path)) {
-      mkdir($path);
-    } else {
-      $this->delfile($path);   // 删除文件
-      mkdir($path);          // 创建文件
-    }
-    clearstatcache();   // 清除is_dir()方法缓存
-    
-
-    $objWriter->save($path . $time . '.xls');
-
 
     $data = [
       'code' => '1',
@@ -287,33 +354,81 @@ class Excel extends Controller
   }
 
   /**
-   * 查找表数据
-   * @param table_name
+   * 按页查找表数据
+   * @param table_name 数据库表名
+   * @param page_num   加载的页码(10条数据为1页)
+   * @todo 返回数据给前端
    */
-  public function get_table_data() {
-    $isPost = request()->isPost();
-
-    if (!$isPost) return;
-
+  public function get_table_data() 
+  {
     $tableName = request()->post('table_name');
+    $page = request()->post('page');
 
-    if (!$tableName) {
+
+    if (!$tableName || !$page) {
       return array(
         'code' => '0',
-        'message' => '',
+        'message' => '获取失败',
       );
     }
 
     $form = new Form();
 
-    $data = $form->getTableData($tableName);
+    $tableData = $form->getTableData($tableName);
 
-    // 对数据按id大小排序
+    // 0-9     1
+    // 10-19   2
+    // 20-29   3
+    // 30-39   4
+    // [(x - 1) * 10]   [x * 10 - 1]
+    // 根据页码选择对应范围数据
+    $staIndex = ($page - 1) * 10;
+    $endIndex = $page * 10 - 1;
+    $pagesCount = ceil(count($tableData) / 10);   // 数据按照10条分一页后的总页码数
+
+    $data = [
+      'code' => '1',
+      'message' => '获取成功',
+      'pages_count' => $pagesCount,
+      'data' => array_slice($tableData, $staIndex, 10)
+    ];
+
     return json_encode($data);
+  }
 
-    array_shift($data);
 
-    return json_encode($data);
+  /**
+   * 条件导出数据
+   */
+  public function get_choice_data() 
+  {
+    $tableName = request()->post('table_name');
+    $condition = request()->post('condition');
+
+    if (!$tableName || !is_array($condition) || count($condition) === 0) {
+      $data = [
+        'code' => '0',
+        'message' => '导出失败'
+      ];
+      return json_encode($data);
+    }
+
+
+    $data = [];
+
+    foreach ($condition as $key => $value) {
+      $data = Db::name($tableName)->where($key,'=',$value)->select();
+    }
+
+    $into = $this->data_into_excel($data);
+    $url = $into['url'];
+    $time = $into['time'];
+
+    return json_encode([
+      'code' => '1',
+      'message' => '导出成功',
+      'url' => $url . $time . '.xls'
+    ]);
   }
   
 }
