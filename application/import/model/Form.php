@@ -53,38 +53,42 @@ class Form extends Model
     // 查询 $dbName 表所有字段和备注
     $columns = Db::query('select COLUMN_NAME,column_comment from INFORMATION_SCHEMA.Columns where table_name="' . $dbName . '" and table_schema="hesuan_admin"');
 
-    
-    // 给excel数据增加对应的字段名
+
+    // 数据增加数据表对应的字段
     foreach ($data as $key => $value) {
       foreach ($value as $k => $v) {
-        if ($v['comment'] === $columns[$k + 1]['column_comment']) {
-          $data[$key][$k]['COLUMN_NAME'] = $columns[$k + 1]['COLUMN_NAME'];
+
+        foreach ($columns as $y => $e) {
+          if ($v['comment'] === $e['column_comment']) {
+            $data[$key][$k]['COLUMN_NAME'] = $e['COLUMN_NAME'];
+            break;
+          }
         }
+
       }
     }
-    
+
+    $insert = [];
+    $insertAll = [];
+
 
     // 按照数据表的字段添加到数据库中
     // COLUMN_NAME -> 字段名、 column_comment -> 字段注释
     foreach ($data as $key => $value) {
-      $query = 'INSERT INTO ' . 'ruida_fund_reconciliation';
-      $columnName = '';
-      $columnValue = '';
-
       foreach ($value as $k => $v) {
-        // $v['comment'] $v['value'] $v['COLUMN_NAME']
-        $columnName = $columnName . $v['COLUMN_NAME'] . ',';
-        $columnValue = $columnValue . '"' . $v['value'] . '",';
+        if (array_key_exists('COLUMN_NAME', $v)) {
+          $insert[$v['COLUMN_NAME']] = $v['value'];
+        }
       }
 
-      $columnName = rtrim($columnName, ',');
-      $columnValue = rtrim($columnValue, ',');
-
-      $query = $query . '(' . $columnName . ')' . 'VALUES' . '(' . $columnValue . ')';
-      Db::query($query);
+      array_push($insertAll, $insert);
+      $insert = [];
     }
 
 
-    return '1';
+    $num = Db::name($dbName)->insertAll($insertAll);
+
+
+    return $num;
 	}
 }

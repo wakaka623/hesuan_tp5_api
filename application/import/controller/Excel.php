@@ -230,7 +230,6 @@ class Excel extends Controller
     }
 
 
-
     $path = Env::get('root_path') . 'public\uploads';   // 保存路径
 
     $info = $file->move($path);    // 保存到本地
@@ -268,6 +267,7 @@ class Excel extends Controller
     $header = $data[0];
 
     // 对数组数据进行对象化
+    // [comment: "客户名称"value: "应吉跃"]
     foreach ($data as $key => $value) {
       foreach ($value as $k => $v) {
         $obj = array(
@@ -279,6 +279,7 @@ class Excel extends Controller
       }
     }
 
+
     // 删除数据标题栏
     array_splice($data, 0, 1);
 
@@ -288,9 +289,13 @@ class Excel extends Controller
     $this->delfile($path);   // 删除文件
     // rmdir($filename);
 
-    // return json_encode($data);
     
-    return json_encode($form->import($dbName, $data));
+    $importCount = $form->import($dbName, $data);
+    return json_encode([
+      'code' => '1',
+      'message' => '导入成功',
+      'count' => $importCount
+    ]);
 
   }
 
@@ -394,6 +399,32 @@ class Excel extends Controller
     ];
 
     return json_encode($data);
+  }
+
+
+  /**
+   * 搜索关键字
+   */
+  public function search_key_value() {
+    $val = request()->post('val');
+    $tableName = request()->post('table_name');
+
+    if (!$tableName || !$val) {
+      return json_encode([
+        'code' => '0',
+        'message' => '获取失败'
+      ]);
+    }
+    $keys = array_keys($val);
+    $value=array_values($val);
+    $a=$keys[0];
+    $b=$value[0];
+    $where=[
+          [$keys[0],$value[0]]
+  ];
+      $data = Db::name($tableName)->whereLike($a,$b."%")->field($a)->Distinct(true)->select();
+     
+      return json_encode($data);
   }
 
 
