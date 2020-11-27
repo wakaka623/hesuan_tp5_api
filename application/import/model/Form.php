@@ -37,11 +37,11 @@ class Form extends Model
   public function getTableData($tableName) 
   {
     // 根据id正序导出数据
-    $query = 'SELECT * FROM ' . $tableName . ' order by id';
+    // $query = 'SELECT * FROM ' . $tableName . ' order by id';
 
-    $data = Db::query($query);
+    // $data = Db::query($query);
 
-    // $data = DB::name($tableName)->select();
+    $data = DB::name($tableName)->select();
 
     return $data;
   }
@@ -59,6 +59,7 @@ class Form extends Model
       foreach ($value as $k => $v) {
 
         foreach ($columns as $y => $e) {
+          // comment->备注
           if ($v['comment'] === $e['column_comment']) {
             $data[$key][$k]['COLUMN_NAME'] = $e['COLUMN_NAME'];
             break;
@@ -86,9 +87,30 @@ class Form extends Model
     }
 
 
-    $num = Db::name($dbName)->insertAll($insertAll);
+    Db::startTrans();
+    try {
+      $num = Db::name($dbName)->data($insertAll)->limit(100)->insertAll();
+      Db::commit();
+    } catch (\Exception $e) {
+      // 这是进行异常捕获
+      $errMeg = $e->getMessage();
+      Db::rollback();
+
+      if (strpos($errMeg, 'violation') && strpos($errMeg, 'Duplicate') && strpos($errMeg, 'key')) {
+        $errMeg = '重复主键';
+      }
+
+      return [
+        'code' => '0',
+        'message' => $errMeg
+      ];
+    }
+    
 
 
-    return $num;
+    return [
+      'code' => '1',
+      'num' => $num
+    ];
 	}
 }

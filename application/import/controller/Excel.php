@@ -262,39 +262,156 @@ class Excel extends Controller
     $highestRow = $sheet->getHighestRow();    // 取得共有数据数
     $data = $sheet->toArray();
 
+    $form = new Form();
 
     // 拿出标题栏
-    $header = $data[0];
+    $header = array_shift($data);
+    $endHead = count($header);
 
+    // 判断标题中是否有主键
+    if ($header[0] !== '唯一标识码') {
+      return json_encode([
+        'code' => '0',
+        'message' => '缺少主键key'
+      ]);
+    }
+
+
+    // 删除标题最尾部null值
+    while ($header[$endHead-1] === null) {
+      array_pop($header);
+      $endHead = count($header);
+    }
+    // 删除数据最底部空白行
+    $repeatDelEnd = 1;
+    while ($repeatDelEnd === 1) {
+      $empty = 1;
+      foreach ($data[count($data)-1] as $key => $value) {
+        if ($value !== NULL) {
+          $empty = 0;
+          break;
+        }
+      }
+
+      if ($empty) {
+        array_pop($data);
+      } else {
+        $repeatDelEnd = 0;
+      }
+    }
+    // 删除数据每行最后一个或多个null值
+    while($data[0][count($data[0])-1] === NULL) {
+      foreach ($data as $key => $value) {
+        $endData = count($data[$key])-1;
+  
+        if ($data[$key][$endData] === NULL) {
+          array_pop($data[$key]);
+        }
+      }
+    }
+    
+
+
+    
     // 对数组数据进行对象化
     // [comment: "客户名称"value: "应吉跃"]
+    $delEmptyRows = [];   // 记录空白行key集合
+    $delTotalRows = [];   // 记录合计行key集合
     foreach ($data as $key => $value) {
+      $isValEmpty = 1;     // 判断空白行
+      $isTotalRow = 0;     // 判断合计行
+
       foreach ($value as $k => $v) {
         $obj = array(
           'comment' => $header[$k],
           'value' => $v
         );
+
+        // 判断是否有主键
+        if ($k === 0 && $obj['comment'] === '唯一标识码' && !$obj['value']) {
+          return json_encode([
+            'code' => '0',
+            'message' => '不存在主键 => ' . ($key + 2),
+            'data' => $data
+          ]);
+        }
+
+        // 判断空白行
+        if ($isValEmpty && $k !== 0 && $v !== NULL && $v !== '#N/A') {
+          $isValEmpty = 0;
+        }
+
+
+        // 判断是否有重复标题行
+        if ($v === $header[$k] || ($k === 0 && $v !== NULL && strlen($v) > 48 && preg_match('/[\x{4e00}-\x{9fa5}]/u', $v) > 0)) {
+          return json_encode([
+            'code' => '0',
+            'message' => '存在重复标题栏 => ' . ($key + 2),
+            'data' => $data
+          ]);
+        }
+
+
+        // 判断'合计'行
+        if (!$isTotalRow && $k !== 0 && ($v === '小计' || $v === '总计' || $v === '合计')) {
+          $isTotalRow = 1;
+        }
         
         $data[$key][$k] = $obj;
+      }
+
+      // 保存'合计'行key
+      if ($isTotalRow) {
+        array_unshift($delTotalRows, $key);
+      }
+
+      // 保存空白行key
+      if ($isValEmpty) {
+        array_unshift($delEmptyRows, $key);
+      }
+
+    }
+
+
+    // 删除空白行
+    if (count($delEmptyRows) > 0) {
+      foreach ($delEmptyRows as $key => $value) {
+        array_splice($data, $value, 1);
+      }
+    }
+
+    // 删除'合计'行
+    if (count($isTotalRow) > 0) {
+      foreach ($delTotalRows as $key => $value) {
+        array_splice($data, $value, 1);
       }
     }
 
 
-    // 删除数据标题栏
-    array_splice($data, 0, 1);
+    // return json_encode($data);
 
-    $form = new Form();
+
+    
+
     
     unset($info);   // 关闭指针
     $this->delfile($path);   // 删除文件
     // rmdir($filename);
 
     
-    $importCount = $form->import($dbName, $data);
+    $importInfo = $form->import($dbName, $data);
+
+    if ($importInfo['code'] === '0') {
+      return json_encode([
+        'code' => '0',
+        'message' => $importInfo['message']
+      ]);
+    }
+
     return json_encode([
       'code' => '1',
       'message' => '导入成功',
-      'count' => $importCount
+      'count' => $importInfo['num']
     ]);
 
   }
@@ -359,10 +476,10 @@ class Excel extends Controller
   }
 
   /**
-   * 按页查找表数据
+   * 获取表数据
    * @param table_name 数据库表名
    * @param page_num   加载的页码(10条数据为1页)
-   * @todo 返回数据给前端
+   * @todo 按页查找表数据
    */
   public function get_table_data() 
   {
