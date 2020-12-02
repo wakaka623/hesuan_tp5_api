@@ -48,8 +48,10 @@ class Form extends Model
 
   /**
    * 导入表
+   * @todo 多出的和不识别的键值会报错，少的键值默认放null
    */
-	public function import($dbName, $data) {
+  public function import($dbName, $data) 
+  {
     // 查询 $dbName 表所有字段和备注
     $columns = Db::query('select COLUMN_NAME,column_comment from INFORMATION_SCHEMA.Columns where table_name="' . $dbName . '" and table_schema="hesuan_admin"');
 
@@ -57,21 +59,29 @@ class Form extends Model
     // 数据增加数据表对应的字段
     foreach ($data as $key => $value) {
       foreach ($value as $k => $v) {
+        $verifKey = 0;   // 判断键值规范
 
         foreach ($columns as $y => $e) {
           // comment->备注
           if ($v['comment'] === $e['column_comment']) {
             $data[$key][$k]['COLUMN_NAME'] = $e['COLUMN_NAME'];
+            $verifKey = 1;
             break;
           }
         }
 
+        // 多出数据表设定键值
+        if ($verifKey === 0) {
+          return [
+            'code' => '0',
+            'message' => '未识别键 "' . $v['comment'] . '"'
+          ];
+        }
       }
     }
 
     $insert = [];
     $insertAll = [];
-
 
     // 按照数据表的字段添加到数据库中
     // COLUMN_NAME -> 字段名、 column_comment -> 字段注释

@@ -277,6 +277,24 @@ class Excel extends Controller
     }
 
 
+    $isCaseIn = 0;   // 判断是否有"入金"字段
+    // 对字段名去除首尾空格
+    // 判断是否有"出入金"字段
+    $isCashInOutEmpty = 1;
+    foreach ($header as $key => $value) {
+      $value = trim($value);
+      $header[$key] = $value;
+
+      if ($value === '入金') {
+        $isCaseIn = 1;
+      }
+
+      if ($value === '出入金' || $value === '净入金') {
+        $isCashInOutEmpty = 0;
+      }
+    }
+
+
     // 删除标题最尾部null值
     while ($header[$endHead-1] === null) {
       array_pop($header);
@@ -331,10 +349,12 @@ class Excel extends Controller
         if ($k === 0 && $obj['comment'] === '唯一标识码' && !$obj['value']) {
           return json_encode([
             'code' => '0',
-            'message' => '不存在主键 => ' . ($key + 2),
+            'message' => '不存在主键 row => ' . ($key + 2),
             'data' => $data
           ]);
         }
+        
+
 
         // 判断空白行
         if ($isValEmpty && $k !== 0 && $v !== NULL && $v !== '#N/A') {
@@ -387,8 +407,42 @@ class Excel extends Controller
       }
     }
 
-
     // return json_encode($data);
+
+    
+    // 新增"出入金"字段
+    if ($isCaseIn === 1 && $isCashInOutEmpty === 1) {
+      foreach ($data as $key => $value) {
+        $obj = [
+          'comment' => '出入金',
+          'value' => ''
+        ];
+
+        $cashIn = 0;
+        $cashOut = 0;
+        $cashInOut = 0;
+
+        foreach ($value as $k => $v) {
+          if ($v['comment'] === '入金') {
+            $cashIn = str_replace(',', '', $v['value']);
+            $cashIn = floatval($cashIn);
+          } else if ($v['comment'] === '出金') {
+            $cashOut = str_replace(',', '', $v['value']);
+            $cashOut = floatval($cashOut);
+          }
+        }
+
+        $cashInOut = strval($cashIn - $cashOut);
+        // 查找运算结果是否包含小数
+        if (!strpos($cashInOut, '.')) {
+          $cashInOut = $cashInOut . '.00';
+        }
+
+        $obj['value'] = $cashInOut;
+        
+        array_push($data[$key], $obj);
+      }
+    }
 
 
     
