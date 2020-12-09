@@ -9,6 +9,8 @@ use \Env;
 use app\import\model\Form;
 use think\Db;
 
+header("Content-Type:text/html;charset=utf-8");
+
 
 require_once Env::get('root_path') . 'extend\phpexcel\PHPExcel.php';
 // require_once Env::get('root_path') . 'extend\phpexcel\PHPExcel\IOFactory.php';
@@ -19,6 +21,9 @@ class Excel extends Controller
 {
   /**
    * 给Excel表格添加样式
+   * @param $objPHPExcel PHPExcel实例
+   * @param $endRow 横轴最后一个位置字母
+   * @param $endColumn 纵轴最后一个位置数字
    * @method
    */
   private function excel_add_style($objPHPExcel, $endRow, $endColumn) {
@@ -67,6 +72,12 @@ class Excel extends Controller
 
   /**
    * 数据转excel
+   * @param {Array} $data 
+   * [
+   *  ['key'=>'value', 'key'=>'value'...], 
+   *  ['key'=>'value', 'key'=>'value'...], 
+   *  ...
+   * ]
    * @method
    */
   private function data_into_excel($data)
@@ -104,37 +115,53 @@ class Excel extends Controller
 
     
 
-    //设置当前的表格
+    $titleAxis = [];    // 记录key值row坐标
+    $titleRows = $data[0];   // 获取标题栏
+
+    $rownum = 0;
+    // 按数组顺序输入表格标题
+    // 并把横坐标记录$titleAxis
     $objPHPExcel->setActiveSheetIndex(0);
-    // 把数据转化对应表内容
-    foreach ($data as $key => $value) {
-      $letterKey = 0;
+    foreach ($titleRows as $key => $value) {
+      $cell = $excelRow[$rownum] . 1;   // 当前对应表格的坐标(横坐标 . 纵坐标)
       
-      foreach ($value as $k => $v) {
-        $cell = $excelRow[$letterKey] . ($key + 1);
+      $titleAxis[$key] = $excelRow[$rownum];   // 记录key值row坐标
+      $rownum++;
         
-        $objPHPExcel->getActiveSheet()
-          // ->setCellValue($cell, ' ' . $v);
-          // 按指定格式写入数据
-          ->setCellValueExplicit($cell, $v, \PHPExcel_Cell_DataType::TYPE_STRING);
-
-        $letterKey++;
-      }
-
+      $objPHPExcel->getActiveSheet()
+        // ->setCellValue($cell, ' ' . $v);
+        // 按指定格式写入数据
+        ->setCellValueExplicit($cell, $value, \PHPExcel_Cell_DataType::TYPE_STRING);
     }
+
+
+    // 输入表格内容↓
+    // 数据key和标题key不批对不会输入内容
+    for ($i=1; $i < count($data); $i++) { 
+      foreach ($data[$i] as $k => $v) {
+        // 数据的key和标题的key配对
+        if (array_key_exists($k, $titleRows)) {
+          $cell = $titleAxis[$k] . ($i + 1);     // 根据$titleAxis记录的坐标
+          
+          $objPHPExcel->getActiveSheet()
+            // 按指定格式写入数据
+            ->setCellValueExplicit($cell, $v, \PHPExcel_Cell_DataType::TYPE_STRING);
+        }
+      }
+    }
+
 
     // 给excel表格添加样式
     $excelEndColumn = count($data);    // 表格列最终索引
     $excelEndRow = $excelRow[$selRowLeng - 1];  // 表格行最终索引
     $this->excel_add_style($objPHPExcel, $excelEndRow, $excelEndColumn);
 
-      
 
 
     //设置当前的表格
     $objPHPExcel->setActiveSheetIndex(0);
 
-    $objWriter = \PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');
+    $objWriter = \PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel5');  // 转换excel
     ob_end_clean();
 
     
@@ -164,10 +191,9 @@ class Excel extends Controller
 
     $objWriter->save($path . $time . '.xls');
 
-    return [
-      'url' => $url,
-      'time' => $time
-    ];
+    $downUrl = $url . $time . '.xls';
+
+    return $downUrl;
   }
 
   /**
@@ -205,7 +231,7 @@ class Excel extends Controller
    * 获取时间戳毫秒单位
    * @method
    */
-  public function msectime(){
+  public function msectime() {
     list($msec, $sec) = explode(' ', microtime());
     $msectime = (float)sprintf('%.0f', (floatval($msec) + floatval($sec)) * 1000);
     return $msectime;
@@ -213,6 +239,7 @@ class Excel extends Controller
 
   /**
    * 导入表
+   * 根据和数据库的注释对照，自动填充数据库写好的字段
    */
   public function index() {
     $isPost = request()->isPost();
@@ -491,15 +518,13 @@ class Excel extends Controller
 
 
     $req = $this->data_into_excel($selectData);
-    $url = $req['url'];
-    $time = $req['time'];
 
     
 
     $data = [
       'code' => '1',
       'message' => '导出成功',
-      'data' => $url . $time . '.xls'
+      'data' => $req
     ];
 
     return json_encode($data);
@@ -532,8 +557,8 @@ class Excel extends Controller
   /**
    * 获取表数据
    * @param table_name 数据库表名
-   * @param page_num   加载的页码(10条数据为1页)
-   * @todo 按页查找表数据
+   * @param page 加载的页码(10条数据为1页) 0为起始页
+   * @todo 按页查找表数据（给前端展示）
    */
   public function get_table_data() 
   {
@@ -541,32 +566,24 @@ class Excel extends Controller
     $page = request()->post('page');
 
 
-    if (!$tableName || !$page) {
-      return array(
+    if (!$tableName || is_null($page)) {
+      return json_encode(array(
         'code' => '0',
         'message' => '获取失败',
-      );
+      ));
     }
 
+
     $form = new Form();
+    $start = $page * 10;
 
-    $tableData = $form->getTableData($tableName);
-
-    // 0-9     1
-    // 10-19   2
-    // 20-29   3
-    // 30-39   4
-    // [(x - 1) * 10]   [x * 10 - 1]
-    // 根据页码选择对应范围数据
-    $staIndex = ($page - 1) * 10;
-    $endIndex = $page * 10 - 1;
-    $pagesCount = ceil(count($tableData) / 10);   // 数据按照10条分一页后的总页码数
+    $tableData = $form->getTableData($tableName, $start);
 
     $data = [
       'code' => '1',
       'message' => '获取成功',
-      'pages_count' => $pagesCount,
-      'data' => array_slice($tableData, $staIndex, 10)
+      'pages_count' => ceil($tableData['count'] / 10),
+      'data' => $tableData['data']
     ];
 
     return json_encode($data);
@@ -574,63 +591,109 @@ class Excel extends Controller
 
 
   /**
-   * 搜索关键字
+   * 合并导出
+   * @param {Array} tableNames 导出的表
+   * @param {Array} selectColumns 导出的字段和注释
+   * @param {Array} selectData 导出的字段和条件
    */
-  public function search_key_value() {
-    $val = request()->post('val');
-    $tableName = request()->post('table_name');
+  public function merge_export() {
+    // $tableNames = ['sanli_client_funds', 'jinkong_client_funds'];
+    // $selectColumns = [
+    //   'unique_code' => '唯一标识码',
+    //   'category' => '类别',
+    //   'customer_number' => '客户号',
+    //   'customer_name' => '客户名称'
+    // ];
+    // $selectData = [
+    //   'unique_code' => [20201126, 20201128],   // 表示取区间范围
+    //   'customer_name' => ['孟万水'],
+    // ];
 
-    if (!$tableName || !$val) {
-      return json_encode([
-        'code' => '0',
-        'message' => '获取失败'
-      ]);
-    }
-    $keys = array_keys($val);
-    $value=array_values($val);
-    $a=$keys[0];
-    $b=$value[0];
-    $where=[
-          [$keys[0],$value[0]]
-  ];
-      $data = Db::name($tableName)->whereLike($a,$b."%")->field($a)->Distinct(true)->select();
-     
-      return json_encode($data);
-  }
-
-
-  /**
-   * 条件导出数据
-   */
-  public function get_choice_data() 
-  {
-    $tableName = request()->post('table_name');
-    $condition = request()->post('condition');
-
-    if (!$tableName || !is_array($condition) || count($condition) === 0) {
-      $data = [
-        'code' => '0',
-        'message' => '导出失败'
-      ];
-      return json_encode($data);
-    }
+    $tableNames = request()->post('table_names');
+    $selectData = request()->post('select_data');
+    $selectColumns = request()->post('select_columns');
 
 
     $data = [];
+    $data[0] = $selectColumns;    // 加入标题栏
 
-    foreach ($condition as $key => $value) {
-      $data = Db::name($tableName)->where($key,'=',$value)->select();
+
+    try {
+      $columns = '';   // sql语法筛选column
+      foreach ($selectColumns as $k => $v) {
+        $columns = $columns . $k . ',';
+      }
+      $columns = substr($columns, 0, strlen($columns)-1);
+    } catch(\Exception $e) {
+      // return $e;
+      return json_encode([
+        'code' => '0',
+        'message' => '标题字段获取错误'
+      ]);
     }
 
-    $into = $this->data_into_excel($data);
-    $url = $into['url'];
-    $time = $into['time'];
 
-    return json_encode([
-      'code' => '1',
-      'message' => '导出成功',
-      'url' => $url . $time . '.xls'
-    ]);
-  }
+    try {
+      $i = 0;
+      $whereExprn = '';    // sql条件语句
+      foreach ($selectData as $k => $v) {
+        if ($k === 'unique_code') {
+          // unique_code字段做特殊取值处理
+          if (count($v) > 1) {
+            $whereExprn = $whereExprn . "cast(substring($k, 6, 8) as SIGNED)>=$v[0] AND cast(substring($k, 6, 8) as SIGNED)<=$v[1]";
+          } else {
+            $whereExprn = $whereExprn . "cast(substring($k, 6, 8) as SIGNED)=$v[0]";
+          }
+        } else {
+          if (count($v) > 1) {
+            $whereExprn = $whereExprn . "$k >= '$v[0]' AND $k <= '$v[1]'";
+          } else {
+            $whereExprn = $whereExprn . "$k = '$v[0]'";
+          }
+        }
+
+        if ($i !== count($selectData)-1) {
+          $whereExprn = $whereExprn . ' AND ';
+        }
+
+        $i++;
+      }
+    } catch(\Exception $e) {
+      // return $e;
+      return json_encode([
+        'code' => '0',
+        'message' => '条件取值出现异常'
+      ]);
+    }
+    
+    // return $whereExprn;
+
+    try {
+      foreach ($tableNames as $key => $value) {
+        $query = "SELECT $columns FROM $value where $whereExprn";
+        $result = Db::query($query);
   
+        $data = array_merge($data, $result);
+      }
+    } catch (\Exception $e) {
+      // return $e;
+      return json_encode([
+        'code' => '0',
+        'message' => '数据库查询出现异常'
+      ]);
+    }
+
+    // return json_encode($data);
+    if (count($data) === 1) {
+      return json_encode([
+        'code' => '0',
+        'message' => '搜索结果为空'
+      ]);
+    }
+
+
+    $url = $this->data_into_excel($data);
+
+    return ($url);
+  }
 }

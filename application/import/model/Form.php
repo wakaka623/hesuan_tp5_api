@@ -34,21 +34,28 @@ class Form extends Model
   /**
    * 查找表数据
    */
-  public function getTableData($tableName) 
+  public function getTableData($tableName, $start) 
   {
     // 根据id正序导出数据
     // $query = 'SELECT * FROM ' . $tableName . ' order by id';
 
     // $data = Db::query($query);
 
-    $data = DB::name($tableName)->select();
+    $data = DB::name($tableName)->limit($start, 10)->select();
+    $count = DB::name($tableName)->count();
 
-    return $data;
+    return [
+      'data' => $data,
+      'count' => $count
+    ];
   }
 
   /**
    * 导入表
-   * @todo 多出的和不识别的键值会报错，少的键值默认放null
+   * 多出的和不识别的键值会报错，少的键值默认放null
+   * 根据传入的数据$data标题，与数据库的注释做判断入表
+   * 根据相同的字段注释入表
+   * 
    */
   public function import($dbName, $data) 
   {
@@ -56,7 +63,8 @@ class Form extends Model
     $columns = Db::query('select COLUMN_NAME,column_comment from INFORMATION_SCHEMA.Columns where table_name="' . $dbName . '" and table_schema="hesuan_admin"');
 
 
-    // 数据增加数据表对应的字段
+    // 此时$data没有键值
+    // 根据注释为$data添加表中对应的字段名
     foreach ($data as $key => $value) {
       foreach ($value as $k => $v) {
         $verifKey = 0;   // 判断键值规范
