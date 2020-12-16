@@ -179,15 +179,21 @@ class Excel extends Controller
     $path = Env::get('root_path') . 'public\uploads\\';   // 保存路径
     $url = request()->domain() . '/tp5/public/uploads/';   // 访问路径
 
-    // 查找文件夹，如果文件夹不存在创建改目录
-    if (!is_dir($path)) {
-      mkdir($path);
-    } else {
-      $this->delfile($path);   // 删除文件
-      mkdir($path);          // 创建文件
+    try {
+      // 查找文件夹，如果文件夹不存在创建改目录
+      if (is_dir($path)) {
+        $this->delfile($path);   // 删除文件
+        mkdir($path);          // 创建文件
+      } else {
+        mkdir($path);
+      }
+      clearstatcache();   // 清除is_dir()方法缓存
+    } catch(\Exception $e) {
+      return json_encode([
+        'code' => '0',
+        'message' => '文件操作失败，请重试'
+      ]);
     }
-    clearstatcache();   // 清除is_dir()方法缓存
-    
 
     $objWriter->save($path . $time . '.xls');
 
@@ -290,6 +296,8 @@ class Excel extends Controller
     $data = $sheet->toArray();
 
     $form = new Form();
+
+    return json_encode($data);
 
     // 拿出标题栏
     $header = array_shift($data);
@@ -476,8 +484,15 @@ class Excel extends Controller
 
     
     unset($info);   // 关闭指针
-    $this->delfile($path);   // 删除文件
-    // rmdir($filename);
+    try {
+      $this->delfile($path);   // 删除文件
+      // rmdir($filename);
+    } catch(\Exception $e) {
+      return json_encode([
+        'code' => '0',
+        'message' => '文件操作失败，请重试'
+      ]);
+    }
 
     
     $importInfo = $form->import($dbName, $data);
@@ -591,10 +606,13 @@ class Excel extends Controller
 
 
   /**
-   * 合并导出
+   * 支持多个表，
+   * 两个值之间范围查询，
+   * 多个值指定查询
    * @param {Array} tableNames 导出的表
    * @param {Array} selectColumns 导出的字段和注释
    * @param {Array} selectData 导出的字段和条件
+   * @todo 按照表名，根据条件合并导出excel
    */
   public function merge_export() {
     // $tableNames = ['sanli_client_funds', 'jinkong_client_funds'];
@@ -602,11 +620,13 @@ class Excel extends Controller
     //   'unique_code' => '唯一标识码',
     //   'category' => '类别',
     //   'customer_number' => '客户号',
-    //   'customer_name' => '客户名称'
+    //   'customer_name' => '客户名称',
+    //   'deposit' => '入金',
     // ];
     // $selectData = [
-    //   'unique_code' => [20201126, 20201128],   // 表示取区间范围
-    //   'customer_name' => ['孟万水'],
+    //   'unique_code' => [20201126, 20201127],   // 表示取区间范围
+    //   'deposit' => [1, 500000000000],
+    //   'customer_name' => ['孟万水', '李雷权', '王帅', '张洪伟'],
     // ];
 
     $tableNames = request()->post('table_names');
@@ -633,20 +653,70 @@ class Excel extends Controller
     }
 
 
+    // 选择的数据都是空字符不做查询筛选
+    foreach ($selectData as $k => $v) {
+      $isEmpty = 1;
+      foreach ($v as $key => $value) {
+        if (trim($value) !== '') $isEmpty = 0;
+      }
+      if ($isEmpty === 1) unset($selectData[$k]);
+    }
+    if (!isset($selectData['unique_code'])) {
+      return json_encode([
+        'code' => '0',
+        'message' => '选择的主键内容为空'
+      ]);
+    }
+
+    // 获取条件语句
     try {
       $i = 0;
-      $whereExprn = '';    // sql条件语句
+      $whereExprn = 'where ';    // sql条件语句
+
       foreach ($selectData as $k => $v) {
         if ($k === 'unique_code') {
           // unique_code字段做特殊取值处理
           if (count($v) > 1) {
+            if (intval($v[0]) > 0) {
+              $v[0] = (int)$v[0];
+            } else {
+              $v[0] = (int)substr($v[0], count($v[0])-9, 8);
+            }
+            if (intval($v[1]) > 0) {
+              $v[1] = (int)$v[1];
+            } else {
+              $v[1] = (int)substr($v[1], count($v[1])-9, 8);
+            }
             $whereExprn = $whereExprn . "cast(substring($k, 6, 8) as SIGNED)>=$v[0] AND cast(substring($k, 6, 8) as SIGNED)<=$v[1]";
           } else {
-            $whereExprn = $whereExprn . "cast(substring($k, 6, 8) as SIGNED)=$v[0]";
+            if (intval($v[0]) > 0) {
+              $v[0] = (int)$v[0];
+              $whereExprn = $whereExprn . "cast(substring($k, 6, 8) as SIGNED)=$v[0]";
+            } else {
+              $whereExprn = $whereExprn . "$k='$v[0]'";
+            }
+          }
+        } else if ($k === 'deposit' || $k === 'withdrawal' || $k === 'deposit_and_withdrawal') {
+          // 入金、出金、出入金
+          // 数字区间值
+          if (count($v) === 2) {
+            $v[0] = (int)$v[0];
+            $v[1] = (int)$v[1];
+            $whereExprn = $whereExprn . "(cast($k as SIGNED) >= $v[0] AND cast($k as SIGNED) <= $v[1])";
+          } else {
+            $v[0] = (int)$v[0];
+            $whereExprn = $whereExprn . "cast($k as SIGNED) = $v[0]";
           }
         } else {
+          // 普通值，多选
           if (count($v) > 1) {
-            $whereExprn = $whereExprn . "$k >= '$v[0]' AND $k <= '$v[1]'";
+            $whereExprn = $whereExprn . '(';
+            for ($j=0; $j < count($v); $j++) { 
+              $whereExprn = $whereExprn . "$k = '$v[$j]'";
+
+              if ($j != count($v) - 1) $whereExprn = $whereExprn . ' OR ';
+            }
+            $whereExprn = $whereExprn . ')';
           } else {
             $whereExprn = $whereExprn . "$k = '$v[0]'";
           }
@@ -662,15 +732,17 @@ class Excel extends Controller
       // return $e;
       return json_encode([
         'code' => '0',
-        'message' => '条件取值出现异常'
+        'message' => '条件取值异常'
       ]);
     }
-    
+
     // return $whereExprn;
+
+    if (count($selectData) === 0) $whereExprn = '';
 
     try {
       foreach ($tableNames as $key => $value) {
-        $query = "SELECT $columns FROM $value where $whereExprn";
+        $query = "SELECT $columns FROM $value $whereExprn";
         $result = Db::query($query);
   
         $data = array_merge($data, $result);
@@ -691,9 +763,68 @@ class Excel extends Controller
       ]);
     }
 
+    // return json_encode($data);
 
-    $url = $this->data_into_excel($data);
+    // 判断是否有需要统计的字段
+    $isPass = 0;
+    $test = [
+      'deposit',                 // 入金
+      'withdrawal',              // 出金
+      'deposit_and_withdrawal',  // 出入金
+    ];
+    for ($i=0; $i < count($test); $i++) { 
+      if (isset($data[0][$test[$i]])) {
+        $isPass = 1;
+        break;
+      } 
+    }
+    // 数据最尾部添加合计行
+    if ($isPass) {
+      $amount = 0;
+      $totalRow = [];
+      $keys = array_keys($data[0]);
 
-    return ($url);
+      foreach ($keys as $k => $v) {
+        foreach ($test as $key => $value) {
+          if ($v === $value) {
+            $totalRow[$v] = 0;
+          } else {
+            $totalRow[$v] = '';
+          }
+        }
+
+        if ($v === 'unique_code') $totalRow[$v] = '合计';
+      }
+
+      array_push($data, $totalRow);
+
+      foreach ($data as $k => $v) {
+        foreach ($test as $key => $value) {
+          if ($k === $value) {
+            $totalRow[$k] += (int)$v;
+          }
+        }
+      }
+    }
+
+    return json_encode($data);
+    
+
+
+    try {
+      // 数据转化excel
+      $url = $this->data_into_excel($data);
+    } catch(\Exception $e) {
+      return json_encode([
+        'code' => '0',
+        'message' => '文件操作失败请重试'
+      ]);
+    }
+
+    return json_encode([
+      'code' => '1',
+      'message' => '导出成功',
+      'url' => $url
+    ]);
   }
 }
