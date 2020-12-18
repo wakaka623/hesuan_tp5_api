@@ -179,21 +179,14 @@ class Excel extends Controller
     $path = Env::get('root_path') . 'public\uploads\\';   // 保存路径
     $url = request()->domain() . '/tp5/public/uploads/';   // 访问路径
 
-    try {
-      // 查找文件夹，如果文件夹不存在创建改目录
-      if (is_dir($path)) {
-        $this->delfile($path);   // 删除文件
-        mkdir($path);          // 创建文件
-      } else {
-        mkdir($path);
-      }
-      clearstatcache();   // 清除is_dir()方法缓存
-    } catch(\Exception $e) {
-      return json_encode([
-        'code' => '0',
-        'message' => '文件操作失败，请重试'
-      ]);
+    // 查找文件夹，如果文件夹不存在创建改目录
+    if (is_dir($path)) {
+      $this->delfile($path);   // 删除文件
+      mkdir($path);          // 创建文件
+    } else {
+      mkdir($path);
     }
+    clearstatcache();   // 清除is_dir()方法缓存
 
     $objWriter->save($path . $time . '.xls');
 
@@ -297,7 +290,7 @@ class Excel extends Controller
 
     $form = new Form();
 
-    return json_encode($data);
+    // return json_encode($data);
 
     // 拿出标题栏
     $header = array_shift($data);
@@ -767,13 +760,17 @@ class Excel extends Controller
 
     // 判断是否有需要统计的字段
     $isPass = 0;
-    $test = [
+    $testToast = [
       'deposit',                 // 入金
       'withdrawal',              // 出金
       'deposit_and_withdrawal',  // 出入金
+      'handling_fee',            // 手续费
+      'hand_in_fee',             // 上交手续费
+      'retention_fee',           // 留存手续费
+      'total_profit_and_loss',   // 总盈亏
     ];
-    for ($i=0; $i < count($test); $i++) { 
-      if (isset($data[0][$test[$i]])) {
+    for ($i=0; $i < count($testToast); $i++) { 
+      if (isset($data[0][$testToast[$i]])) {
         $isPass = 1;
         break;
       } 
@@ -781,33 +778,40 @@ class Excel extends Controller
     // 数据最尾部添加合计行
     if ($isPass) {
       $amount = 0;
-      $totalRow = [];
+      $totalRow = [];     // 合计行
+      $userToast = [];    // 用户选中的统计字段
       $keys = array_keys($data[0]);
 
+      // 初始化值
       foreach ($keys as $k => $v) {
-        foreach ($test as $key => $value) {
-          if ($v === $value) {
-            $totalRow[$v] = 0;
-          } else {
-            $totalRow[$v] = '';
-          }
-        }
+        $totalRow[$v] = '#N/A';
 
         if ($v === 'unique_code') $totalRow[$v] = '合计';
       }
-
-      array_push($data, $totalRow);
-
-      foreach ($data as $k => $v) {
-        foreach ($test as $key => $value) {
-          if ($k === $value) {
-            $totalRow[$k] += (int)$v;
+      // 核对用户有选中统计的字段
+      foreach ($keys as $key => $value) {
+        for ($i=0; $i < count($testToast); $i++) { 
+          if ($value === $testToast[$i]) {
+            array_push($userToast, $value);
+            break;
           }
         }
       }
+
+
+      // 合计导出数据要统计的值
+      foreach ($userToast as $key) {
+        $amount = 0;
+        for ($i=1; $i < count($data); $i++) { 
+          $amount += (int)$data[$i][$key];
+        }
+        $totalRow[$key] = strval($amount);
+      }
+
+      array_push($data, $totalRow);
     }
 
-    return json_encode($data);
+    // return json_encode($data);
     
 
 
