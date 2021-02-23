@@ -12,7 +12,7 @@ use think\Db;
 header("Content-Type:text/html;charset=utf-8");
 
 
-require_once Env::get('root_path') . 'extend\phpexcel\PHPExcel.php';
+require_once '../extend/phpexcel/PHPExcel.php';
 // require_once Env::get('root_path') . 'extend\phpexcel\PHPExcel\IOFactory.php';
 
 @ini_set("memory_limit",'-1');
@@ -175,21 +175,20 @@ class Excel extends Controller
 
     // 获取当前时间戳
     $time = $this->msectime();
+//    $path = Env::get('root_path') . 'public/uploads';   // 保存路径
+    $path = Env::get('root_path') . 'public/uploads';   // 保存路径
+    $url = request()->domain() . '/uploads/';   // 访问路径
 
-    $path = Env::get('root_path') . 'public\uploads\\';   // 保存路径
-    $url = request()->domain() . '/tp5/public/uploads/';   // 访问路径
-
+  
     // 查找文件夹，如果文件夹不存在创建改目录
     if (is_dir($path)) {
-      $this->delfile($path);   // 删除文件
-      mkdir($path);          // 创建文件
+      $this->delfile($path);   // 删除文件夹
+      mkdir($path);          // 创建文件夹
     } else {
       mkdir($path);
     }
     clearstatcache();   // 清除is_dir()方法缓存
-
-    $objWriter->save($path . $time . '.xls');
-
+    $objWriter->save($path."/". $time . '.xls');
     $downUrl = $url . $time . '.xls';
 
     return $downUrl;
@@ -284,13 +283,14 @@ class Excel extends Controller
 
     // 使用PHPExcel获取excel数据
     $PHPExcel = $PHPReader->load($filename);
-    $sheet = $PHPExcel->getActiveSheet(0);    // 获得sheet
+    $sheet = $PHPExcel->getActiveSheet(0);// 获得sheet
     $highestRow = $sheet->getHighestRow();    // 取得共有数据数
     $data = $sheet->toArray();
 
     $form = new Form();
 
-    // return json_encode($data);
+//    return json_encode($data);
+//    exit;
 
     // 拿出标题栏
     $header = array_shift($data);
@@ -312,7 +312,6 @@ class Excel extends Controller
     foreach ($header as $key => $value) {
       $value = trim($value);
       $header[$key] = $value;
-
       if ($value === '入金') {
         $isCaseIn = 1;
       }
@@ -355,18 +354,15 @@ class Excel extends Controller
         }
       }
     }
-    
 
-
-    
+//     return json_encode($data);
     // 对数组数据进行对象化
     // [comment: "客户名称"value: "应吉跃"]
     $delEmptyRows = [];   // 记录空白行key集合
     $delTotalRows = [];   // 记录合计行key集合
     foreach ($data as $key => $value) {
       $isValEmpty = 1;     // 判断空白行
-      $isTotalRow = 0;     // 判断合计行
-
+      $isTotalRow = 0;     // 判断合计
       foreach ($value as $k => $v) {
         $obj = array(
           'comment' => $header[$k],
@@ -407,7 +403,7 @@ class Excel extends Controller
         
         $data[$key][$k] = $obj;
       }
-
+//        return json_encode($data);
       // 保存'合计'行key
       if ($isTotalRow) {
         array_unshift($delTotalRows, $key);
@@ -419,7 +415,6 @@ class Excel extends Controller
       }
 
     }
-
 
     // 删除空白行
     if (count($delEmptyRows) > 0) {
@@ -435,7 +430,7 @@ class Excel extends Controller
       }
     }
 
-    // return json_encode($data);
+//     return json_encode($data);
 
     
     // 新增"出入金"字段
@@ -537,6 +532,79 @@ class Excel extends Controller
 
     return json_encode($data);
   }
+    /**
+     * 创建(导出)Excel数据表格
+     * @param  array   $list        要导出的数组格式的数据
+     * @param  string  $filename    导出的Excel表格数据表的文件名
+     * @param  array   $indexKey    $list数组中与Excel表格表头$header中每个项目对应的字段的名字(key值)
+     * @param  array   $startRow    第一条数据在Excel表格中起始行
+     * @param  [bool]  $excel2007   是否生成Excel2007(.xlsx)以上兼容的数据表
+     * 比如: $indexKey与$list数组对应关系如下:
+     *     $indexKey = array('id','username','sex','age');
+     *     $list = array(array('id'=>1,'username'=>'YQJ','sex'=>'男','age'=>24));
+     */
+//    function exportExcel($list,$filename,$indexKey,$startRow=1,$excel2007=false){
+    function exportExcel($startRow=1,$excel2007=false){
+        //文件引入
+        require_once '../extend/phpexcel/PHPExcel.php';
+        require_once '../extend/phpexcel/PHPExcel/Writer/Excel2007.php';
+        $isadmin=1;
+        $group='';
+        // 获取当前时间戳
+
+//        $filename=$time;
+        $tableName = request()->post('table_names');
+        $form=new Form();
+        $Key=$form->getColumns($tableName,$group,$isadmin);
+        $indexKey=array_keys($Key);
+        if(empty($filename)) $filename = time();
+        if( !is_array($indexKey)) return false;
+
+        $header_arr = array('A','B','C','D','E','F','G','H','I','J','K','L','M', 'N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA', 'AB', 'AC', 'AD',
+            'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN',
+            'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX',
+            'AY', 'AZ');
+        //初始化PHPExcel()
+        $objPHPExcel = new \PHPExcel();
+
+        //设置保存版本格式
+        if($excel2007){
+            $objWriter = new \PHPExcel_Writer_Excel2007($objPHPExcel);
+            $filename = $filename.'.xlsx';
+        }else{
+            $objWriter = new \PHPExcel_Writer_Excel5($objPHPExcel);
+            $filename = $filename.'.xls';
+        }
+
+        //接下来就是写数据到表格里面去
+        $objActSheet = $objPHPExcel->getActiveSheet();
+        //$startRow = 1;
+        $list1=$form->getTableDate($tableName);
+        $list=array_merge(array($Key),$list1);
+        foreach ($list as $row) {
+            foreach ($indexKey as $key => $value){
+                //这里是设置单元格的内容
+                $objActSheet->setCellValue($header_arr[$key].$startRow,$row[$value]);
+            }
+            $startRow++;
+        }
+        $time = $this->msectime();
+        $path = Env::get('root_path') . 'public/uploads';   // 保存路径
+        $url = request()->domain() . '/uploads/';   // 访问路径
+        // 下载这个表格，在浏览器输出
+//        header("Pragma: public");
+//        header("Expires: 0");
+//        header("Cache-Control:must-revalidate, post-check=0, pre-check=0");
+//        header("Content-Type:application/force-download");
+//        header("Content-Type:application/vnd.ms-execl");
+//        header("Content-Type:application/octet-stream");
+//        header("Content-Type:application/download");;
+//        header('Content-Disposition:attachment;filename='.$filename.'');
+//        header("Content-Transfer-Encoding:binary");
+        $objWriter->save($path."/". $time . '.xls');
+        $downUrl = $url . $time . '.xls';
+        return $downUrl;
+    }
 
   /**
    * 查找表字段
@@ -547,6 +615,8 @@ class Excel extends Controller
     if (!$isPost) return;
 
     $tableName = request()->post('table_name');
+    $group = request()->post('group');
+    $isadmin = request()->post('isadmin');
 
     if (!$tableName) {
       return array(
@@ -557,10 +627,11 @@ class Excel extends Controller
 
     $form = new Form();
 
-    $data = $form->getColumns($tableName);
+    $data = $form->getColumns($tableName,$group,$isadmin);
     
     return json_encode($data);
   }
+
 
   /**
    * 获取表数据
@@ -572,7 +643,24 @@ class Excel extends Controller
   {
     $tableName = request()->post('table_name');
     $page = request()->post('page');
+    $group=request()->post('group');
+    $isadmin=request()->post('isadmin');
+    $startDate=trim(request()->post('startDate'));
+    $endtDate=trim(request()->post('endDate'));
+    $account=trim(request()->post('account'));
+    $customerame=trim(request()->post('customerName'));
+    $searchGroup=trim(request()->post('searchGroup'));
+    $sortField=trim(request()->post('sortField'));
+    $sortType=request()->post('sortType');
 
+    if($startDate&&$endtDate){
+        $startDate1=strtotime($startDate);
+        $endtDate1=strtotime($endtDate);
+        $startDate2=date('Ymd', $startDate1);
+        $endtDate2=date('Ymd', $endtDate1);
+    }
+
+//    var_dump($endtDate);
 
     if (!$tableName || is_null($page)) {
       return json_encode(array(
@@ -583,15 +671,635 @@ class Excel extends Controller
 
 
     $form = new Form();
-    $start = $page * 10;
+    $start = $page * 30;
 
-    $tableData = $form->getTableData($tableName, $start);
+    $tableData = $form->getTableData($tableName, $start,$group,$isadmin,$startDate2,$endtDate2,$account,$customerame,$searchGroup,$sortField,$sortType);
 
+
+    $data=$tableData['data'];
+    $page_collect=array();
+    $count_collect=array();
+    if ($tableName=='hengyin_client_funds'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['equity_at_the_beginning_of_the_period']=round($value['equity_at_the_beginning_of_the_period']+$page_collect['equity_at_the_beginning_of_the_period'],2);//初期权益
+            $page_collect['total_profit_and_loss']=round($value['total_profit_and_loss']+$page_collect['total_profit_and_loss'],2);//盈亏总额
+            $page_collect['handling_fee']=round($value['handling_fee']+$page_collect['handling_fee'],2);//手续费
+            $page_collect['deposit']=round($value['deposit']+ $page_collect['deposit'],2);//入金
+            $page_collect['withdrawal']=round($value['withdrawal']+$page_collect['withdrawal'],2);//出金
+            $page_collect['deposit_and_withdrawal']=round($value['deposit_and_withdrawal']+$page_collect['deposit_and_withdrawal'],2);//出入金
+            $page_collect['available_at_the_end_of_the_term']=round($value['available_at_the_end_of_the_term']+$page_collect['available_at_the_end_of_the_term'],2);//期末可用
+            $page_collect['bond']=round( $page_collect['bond']+$value['bond'],2);//保证金
+            $page_collect['ending_equity']=round($page_collect['ending_equity']+$value['ending_equity'],2);//资金权益
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['equity_at_the_beginning_of_the_period']=round($collect['sum(equity_at_the_beginning_of_the_period)']+$count_collect['equity_at_the_beginning_of_the_period'],2);//初期权益
+        $count_collect['total_profit_and_loss']=round($collect['sum(total_profit_and_loss)']+$count_collect['total_profit_and_loss'],2);//盈亏总额
+        $count_collect['handling_fee']=round($collect['sum(handling_fee)']+ $count_collect['handling_fee'],2);//手续费
+        $count_collect['deposit']=round($collect['sum(deposit)']+$count_collect['deposit'],2);//入金
+        $count_collect['withdrawal']=round($collect['sum(withdrawal)']+$count_collect['withdrawal'],2);//出金
+        $count_collect['deposit_and_withdrawal']=round($collect['sum(deposit_and_withdrawal)']+$count_collect['deposit_and_withdrawal'],2);//出入金
+        $count_collect['available_at_the_end_of_the_term']=round($collect['sum(available_at_the_end_of_the_term)']+$count_collect['available_at_the_end_of_the_term'],2);//期末可用
+        $count_collect['bond']=round($collect['sum(bond)']+$count_collect['bond'],2);//保证金
+        $count_collect['ending_equity']=round($collect['sum(ending_equity)']+$count_collect['ending_equity'],2);//资金权益
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='hengyin_transaction'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['customer_service_charge']=round($value['customer_service_charge']+$page_collect['customer_service_charge'],2);//客户手续费
+            $page_collect['retention_fee']=round($value['retention_fee']+$page_collect['retention_fee'],2);//平仓盈亏
+            $page_collect['transaction_amount']=round($value['transaction_amount']+$page_collect['transaction_amount'],2);//成交金额
+            $page_collect['number_of_transactions']=round($value['number_of_transactions']+$page_collect['number_of_transactions'],2);//成交手数
+            $page_collect['today_hand_count']=round($value['today_hand_count']+$page_collect['today_hand_count'],2);//平今手数
+            $page_collect['current_service_charge']=round($value['current_service_charge']+$page_collect['current_service_charge'],2);//平今手续费
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['customer_service_charge']=round($collect['sum(customer_service_charge)']+$count_collect['customer_service_charge'],2);//客户手续费
+        $count_collect['retention_fee']=round($collect['sum(retention_fee)']+$count_collect['retention_fee'],2);//平仓盈亏
+        $count_collect['transaction_amount']=round($collect['sum(transaction_amount)']+$count_collect['transaction_amount'],2);//成交金额
+        $count_collect['number_of_transactions']=round($collect['sum(number_of_transactions)']+$count_collect['number_of_transactions'],2);//成交手数
+        $count_collect['today_hand_count']=round($collect['sum(today_hand_count)']+ $count_collect['today_hand_count'],2);//平今手数
+        $count_collect['current_service_charge']=round($collect['sum(current_service_charge)']+$count_collect['current_service_charge'],2);//平今手续费
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='sanli_client_funds'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['equity_at_the_beginning_of_the_period']=round($value['equity_at_the_beginning_of_the_period']+$page_collect['equity_at_the_beginning_of_the_period'],2);
+            $page_collect['deposit']=round($value['deposit']+$page_collect['deposit'],2);
+            $page_collect['withdrawal']=round($value['withdrawal']+$page_collect['withdrawal'],2);
+            $page_collect['deposit_and_withdrawal']=round($value['deposit_and_withdrawal']+$page_collect['deposit_and_withdrawal'],2);
+            $page_collect['total_profit_and_loss']=round($value['total_profit_and_loss']+$page_collect['total_profit_and_loss'],2);
+            $page_collect['net_profit_and_loss']=round($value['net_profit_and_loss']+$page_collect['net_profit_and_loss'],2);
+            $page_collect['handling_fee']=round($value['handling_fee']+$page_collect['handling_fee'],2);
+            $page_collect['hand_in_fee']=round($value['hand_in_fee']+$page_collect['hand_in_fee'],2);
+            $page_collect['retention_fee']=round($value['retention_fee']+$page_collect['retention_fee'],2);
+            $page_collect['ending_equity']=round($value['ending_equity']+$page_collect['ending_equity'],2);
+            $page_collect['bond']=round($value['bond']+$page_collect['bond'],2);
+            $page_collect['available_at_the_end_of_the_term']=round($value['available_at_the_end_of_the_term']+$page_collect['available_at_the_end_of_the_term'],2);
+            $page_collect['average_daily_equity']=round($value['average_daily_equity']+$page_collect['average_daily_equity'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['equity_at_the_beginning_of_the_period']=round($collect['sum(equity_at_the_beginning_of_the_period)']+$count_collect['equity_at_the_beginning_of_the_period'],2);
+        $count_collect['deposit']=round($collect['sum(deposit)']+$count_collect['deposit'],2);
+        $count_collect['withdrawal']=round($collect['sum(withdrawal)']+$count_collect['withdrawal'],2);
+        $count_collect['deposit_and_withdrawal']=round($collect['sum(deposit_and_withdrawal)']+$count_collect['deposit_and_withdrawal'],2);
+        $count_collect['total_profit_and_loss']=round($collect['sum(total_profit_and_loss)']+ $count_collect['total_profit_and_loss'],2);
+        $count_collect['net_profit_and_loss']=round($collect['sum(net_profit_and_loss)']+$count_collect['net_profit_and_loss'],2);
+        $count_collect['handling_fee']=round($collect['sum(handling_fee)']+$count_collect['handling_fee'],2);
+        $count_collect['hand_in_fee']=round($collect['sum(hand_in_fee)']+$count_collect['hand_in_fee'],2);
+        $count_collect['retention_fee']=round($collect['sum(retention_fee)']+$count_collect['retention_fee'],2);
+        $count_collect['ending_equity']=round($collect['sum(ending_equity)']+$count_collect['ending_equity'],2);
+        $count_collect['bond']=round($collect['sum(bond)']+$count_collect['bond'],2);
+        $count_collect['available_at_the_end_of_the_term']=round($collect['sum(available_at_the_end_of_the_term)']+$count_collect['available_at_the_end_of_the_term'],2);
+        $count_collect['average_daily_equity']=round($collect['sum(average_daily_equity)']+$count_collect['average_daily_equity'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='sanli_transaction'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['service_charge']=round($value['service_charge']+$page_collect['service_charge'],2);
+            $page_collect['handing_in_service_charge']=round($value['handing_in_service_charge']+$page_collect['handing_in_service_charge'],2);
+            $page_collect['retention_fee']=round($value['retention_fee']+$page_collect['retention_fee'],2);
+            $page_collect['transaction_price']=round($value['transaction_price']+$page_collect['transaction_price'],2);
+            $page_collect['transaction_amount']=round($value['transaction_amount']+$page_collect['transaction_amount'],2);
+            $page_collect['option_exercise_opening_amount']=round($value['option_exercise_opening_amount']+$page_collect['option_exercise_opening_amount'],2);
+            $page_collect['hand_count']=round($value['hand_count']+$page_collect['hand_count'],2);
+            $page_collect['number_of_options_executed']=round($value['number_of_options_executed']+$page_collect['number_of_options_executed'],2);
+            $page_collect['number_of_abandoned_options']=round($value['number_of_abandoned_options']+$page_collect['number_of_abandoned_options'],2);
+            $page_collect['number_of_open_positions_under_option_execution']=round($value['number_of_open_positions_under_option_execution']+$page_collect['number_of_open_positions_under_option_execution'],2);
+            $page_collect['today_hand_count']=round($value['today_hand_count']+$page_collect['today_hand_count'],2);
+            $page_collect['current_service_charge']=round($value['current_service_charge']+$page_collect['current_service_charge'],2);
+            $page_collect['service_charge_handed_in_at_present']=round($value['service_charge_handed_in_at_present']+$page_collect['service_charge_handed_in_at_present'],2);
+            $page_collect['floating_profit_and_loss_of_option_closing']=round($value['floating_profit_and_loss_of_option_closing']+$page_collect['floating_profit_and_loss_of_option_closing'],2);
+            $page_collect['income_royalty']=round($value['income_royalty']+$page_collect['income_royalty'],2);
+            $page_collect['payment_royalty']=round($value['payment_royalty']+$page_collect['payment_royalty'],2);
+            $page_collect['royalty']=round($value['royalty']+$page_collect['royalty'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['service_charge']=round($collect['sum(service_charge)']+$count_collect['service_charge'],2);
+        $count_collect['handing_in_service_charge']=round($collect['sum(handing_in_service_charge)']+$count_collect['handing_in_service_charge'],2);
+        $count_collect['retention_fee']=round($collect['sum(retention_fee)']+$count_collect['retention_fee'],2);
+        $count_collect['transaction_price']=round($collect['sum(transaction_price)']+$count_collect['transaction_price'],2);
+        $count_collect['transaction_amount']=round($collect['sum(transaction_amount)']+ $count_collect['transaction_amount'],2);
+        $count_collect['option_exercise_opening_amount']=round($collect['sum(option_exercise_opening_amount)']+$count_collect['option_exercise_opening_amount'],2);
+        $count_collect['hand_count']=round($collect['sum(hand_count)']+$count_collect['hand_count'],2);
+        $count_collect['number_of_options_executed']=round($collect['sum(number_of_options_executed)']+$count_collect['number_of_options_executed'],2);
+        $count_collect['number_of_abandoned_options']=round($collect['sum(number_of_abandoned_options)']+$count_collect['number_of_abandoned_options'],2);
+        $count_collect['number_of_open_positions_under_option_execution']=round($collect['sum(number_of_open_positions_under_option_execution)']+$count_collect['number_of_open_positions_under_option_execution'],2);
+        $count_collect['today_hand_count']=round($collect['sum(today_hand_count)']+$count_collect['today_hand_count'],2);
+        $count_collect['current_service_charge']=round($collect['sum(current_service_charge)']+$count_collect['current_service_charge'],2);
+        $count_collect['service_charge_handed_in_at_present']=round($collect['sum(service_charge_handed_in_at_present)']+$count_collect['service_charge_handed_in_at_present'],2);
+        $count_collect['floating_profit_and_loss_of_option_closing']=round($collect['sum(floating_profit_and_loss_of_option_closing)']+$count_collect['floating_profit_and_loss_of_option_closing'],2);
+        $count_collect['income_royalty']=round($collect['sum(income_royalty)']+$count_collect['income_royalty'],2);
+        $count_collect['payment_royalty']=round($collect['sum(payment_royalty)']+$count_collect['payment_royalty'],2);
+        $count_collect['royalty']=round($collect['sum(royalty)']+$count_collect['royalty'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='ruida_client_funds'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['deposit']=round($value['deposit']+$page_collect['deposit'],2);
+            $page_collect['withdrawal']=round($value['withdrawal']+$page_collect['withdrawal'],2);
+            $page_collect['deposit_and_withdrawal']=round($value['deposit_and_withdrawal']+$page_collect['deposit_and_withdrawal'],2);
+            $page_collect['handling_fee']=round($value['handling_fee']+$page_collect['handling_fee'],2);
+            $page_collect['total_profit_and_loss']=round($value['total_profit_and_loss']+$page_collect['total_profit_and_loss'],2);
+            $page_collect['ending_equity']=round($value['ending_equity']+$page_collect['ending_equity'],2);
+            $page_collect['available_funds']=round($value['available_funds']+$page_collect['available_funds'],2);
+            $page_collect['customer_margin']=round($value['customer_margin']+$page_collect['customer_margin'],2);
+            $page_collect['balance_today']=round($value['balance_today']+$page_collect['balance_today'],2);
+            $page_collect['retention_fee']=round($value['retention_fee']+$page_collect['retention_fee'],2);
+            $page_collect['closing_profit_and_loss']=round($value['closing_profit_and_loss']+$page_collect['closing_profit_and_loss'],2);
+            $page_collect['floating_profit_and_loss']=round($value['floating_profit_and_loss']+$page_collect['floating_profit_and_loss'],2);
+            $page_collect['balance_of_last_day']=round($value['balance_of_last_day']+$page_collect['balance_of_last_day'],2);
+            $page_collect['hand_in_fee']=round($value['hand_in_fee']+$page_collect['hand_in_fee'],2);
+            $page_collect['net_handling_charge']=round($value['net_handling_charge']+$page_collect['net_handling_charge'],2);
+            $page_collect['returning_a_servant']=round($value['returning_a_servant']+$page_collect['returning_a_servant'],2);
+            $page_collect['exchange_margin']=round($value['exchange_margin']+$page_collect['exchange_margin'],2);
+            $page_collect['delivery_margin']=round($value['delivery_margin']+$page_collect['delivery_margin'],2);
+            $page_collect['exchange_settlement_margin']=round($value['exchange_settlement_margin']+$page_collect['exchange_settlement_margin'],2);
+            $page_collect['margin_call']=round($value['margin_call']+$page_collect['margin_call'],2);
+            $page_collect['money_pledge_amount']=round($value['money_pledge_amount']+$page_collect['money_pledge_amount'],2);
+            $page_collect['foreign_exchange_in']=round($value['foreign_exchange_in']+$page_collect['foreign_exchange_in'],2);
+            $page_collect['foreign_exchange']=round($value['foreign_exchange']+$page_collect['foreign_exchange'],2);
+            $page_collect['pledge_amount']=round($value['pledge_amount']+$page_collect['pledge_amount'],2);
+            $page_collect['execution_fee']=round($value['execution_fee']+$page_collect['execution_fee'],2);
+            $page_collect['hand_in_the_execution_fee']=round($value['hand_in_the_execution_fee']+$page_collect['hand_in_the_execution_fee'],2);
+            $page_collect['royalty_income_and_expenditure']=round($value['royalty_income_and_expenditure']+$page_collect['royalty_income_and_expenditure'],2);
+            $page_collect['operating_profit_and_loss']=round($value['operating_profit_and_loss']+$page_collect['operating_profit_and_loss'],2);
+            $page_collect['market_value_of_options']=round($value['market_value_of_options']+$page_collect['market_value_of_options'],2);
+            $page_collect['customer_market_value_equity']=round($value['customer_market_value_equity']+$page_collect['customer_market_value_equity'],2);
+            $page_collect['delivery_commission']=round($value['delivery_commission']+$page_collect['delivery_commission'],2);
+            $page_collect['delivery_service_charge']=round($value['delivery_service_charge']+$page_collect['delivery_service_charge'],2);
+            $page_collect['total_freeze']=round($value['total_freeze']+$page_collect['total_freeze'],2);
+            $page_collect['value_added_tax']=round($value['value_added_tax']+$page_collect['value_added_tax'],2);
+            $page_collect['funds_available_to_exchange_level_clients']=round($value['funds_available_to_exchange_level_clients']+$page_collect['funds_available_to_exchange_level_clients'],2);
+            $page_collect['frozen_amount_of_currency_pledge']=round($value['frozen_amount_of_currency_pledge']+$page_collect['frozen_amount_of_currency_pledge'],2);
+            $page_collect['risk_freezing_funds_the_next_day']=round($value['risk_freezing_funds_the_next_day']+$page_collect['risk_freezing_funds_the_next_day'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['deposit']=round($collect['sum(deposit)']+$count_collect['deposit'],2);
+        $count_collect['withdrawal']=round($collect['sum(withdrawal)']+$count_collect['withdrawal'],2);
+        $count_collect['deposit_and_withdrawal']=round($collect['sum(deposit_and_withdrawal)']+$count_collect['deposit_and_withdrawal'],2);
+        $count_collect['handling_fee']=round($collect['sum(handling_fee)']+$count_collect['handling_fee'],2);
+        $count_collect['total_profit_and_loss']=round($collect['sum(total_profit_and_loss)']+ $count_collect['total_profit_and_loss'],2);
+        $count_collect['ending_equity']=round($collect['sum(ending_equity)']+$count_collect['ending_equity'],2);
+        $count_collect['available_funds']=round($collect['sum(available_funds)']+$count_collect['available_funds'],2);
+        $count_collect['customer_margin']=round($collect['sum(customer_margin)']+$count_collect['customer_margin'],2);
+        $count_collect['balance_today']=round($collect['sum(balance_today)']+$count_collect['balance_today'],2);
+        $count_collect['retention_fee']=round($collect['sum(retention_fee)']+$count_collect['retention_fee'],2);
+        $count_collect['closing_profit_and_loss']=round($collect['sum(closing_profit_and_loss)']+$count_collect['closing_profit_and_loss'],2);
+        $count_collect['floating_profit_and_loss']=round($collect['sum(floating_profit_and_loss)']+$count_collect['floating_profit_and_loss'],2);
+        $count_collect['balance_of_last_day']=round($collect['sum(balance_of_last_day)']+$count_collect['balance_of_last_day'],2);
+        $count_collect['hand_in_fee']=round($collect['sum(hand_in_fee)']+$count_collect['hand_in_fee'],2);
+        $count_collect['net_handling_charge']=round($collect['sum(net_handling_charge)']+$count_collect['net_handling_charge'],2);
+        $count_collect['returning_a_servant']=round($collect['sum(returning_a_servant)']+$count_collect['returning_a_servant'],2);
+        $count_collect['exchange_margin']=round($collect['sum(exchange_margin)']+$count_collect['exchange_margin'],2);
+        $count_collect['delivery_margin']=round($collect['sum(delivery_margin)']+$count_collect['delivery_margin'],2);
+        $count_collect['exchange_settlement_margin']=round($collect['sum(exchange_settlement_margin)']+$count_collect['exchange_settlement_margin'],2);
+        $count_collect['margin_call']=round($collect['sum(margin_call)']+$count_collect['margin_call'],2);
+        $count_collect['money_pledge_amount']=round($collect['sum(money_pledge_amount)']+$count_collect['money_pledge_amount'],2);
+        $count_collect['foreign_exchange_in']=round($collect['sum(foreign_exchange_in)']+$count_collect['foreign_exchange_in'],2);
+        $count_collect['foreign_exchange']=round($collect['sum(foreign_exchange)']+$count_collect['foreign_exchange'],2);
+        $count_collect['pledge_amount']=round($collect['sum(pledge_amount)']+$count_collect['pledge_amount'],2);
+        $count_collect['execution_fee']=round($collect['sum(execution_fee)']+$count_collect['execution_fee'],2);
+        $count_collect['hand_in_the_execution_fee']=round($collect['sum(hand_in_the_execution_fee)']+$count_collect['hand_in_the_execution_fee'],2);
+        $count_collect['royalty_income_and_expenditure']=round($collect['sum(royalty_income_and_expenditure)']+$count_collect['royalty_income_and_expenditure'],2);
+        $count_collect['operating_profit_and_loss']=round($collect['sum(operating_profit_and_loss)']+$count_collect['operating_profit_and_loss'],2);
+        $count_collect['market_value_of_options']=round($collect['sum(market_value_of_options)']+$count_collect['market_value_of_options'],2);
+        $count_collect['customer_market_value_equity']=round($collect['sum(customer_market_value_equity)']+$count_collect['customer_market_value_equity'],2);
+        $count_collect['delivery_commission']=round($collect['sum(delivery_commission)']+$count_collect['delivery_commission'],2);
+        $count_collect['delivery_service_charge']=round($collect['sum(delivery_service_charge)']+$count_collect['delivery_service_charge'],2);
+        $count_collect['total_freeze']=round($collect['sum(total_freeze)']+$count_collect['total_freeze'],2);
+        $count_collect['value_added_tax']=round($collect['sum(value_added_tax)']+$count_collect['value_added_tax'],2);
+        $count_collect['funds_available_to_exchange_level_clients']=round($collect['sum(funds_available_to_exchange_level_clients)']+$count_collect['funds_available_to_exchange_level_clients'],2);
+        $count_collect['frozen_amount_of_currency_pledge']=round($collect['sum(frozen_amount_of_currency_pledge)']+$count_collect['frozen_amount_of_currency_pledge'],2);
+        $count_collect['risk_freezing_funds_the_next_day']=round($collect['sum(risk_freezing_funds_the_next_day)']+$count_collect['risk_freezing_funds_the_next_day'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='ruida_transaction'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['transaction_price']=round($value['transaction_price']+$page_collect['transaction_price'],2);
+            $page_collect['turnover']=round($value['turnover']+$page_collect['turnover'],2);
+            $page_collect['service_charge']=round($value['service_charge']+$page_collect['service_charge'],2);
+            $page_collect['handing_in_the_service_charge']=round($value['handing_in_the_service_charge']+$page_collect['handing_in_the_service_charge'],2);
+            $page_collect['specified_price']=round($value['specified_price']+$page_collect['specified_price'],2);
+            $page_collect['quantity_per_hand']=round($value['quantity_per_hand']+$page_collect['quantity_per_hand'],2);
+            $page_collect['mark_of_current_cost_calculation']=round($value['mark_of_current_cost_calculation']+$page_collect['mark_of_current_cost_calculation'],2);
+            $page_collect['surcharge_1']=round($value['surcharge_1']+$page_collect['surcharge_1'],2);
+            $page_collect['surcharge_2']=round($value['surcharge_2']+$page_collect['surcharge_2'],2);
+            $page_collect['other_charges']=round($value['other_charges']+$page_collect['other_charges'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['transaction_price']=round($collect['sum(transaction_price)']+$count_collect['transaction_price'],2);
+        $count_collect['turnover']=round($collect['sum(turnover)']+$count_collect['turnover'],2);
+        $count_collect['service_charge']=round($collect['sum(service_charge)']+$count_collect['service_charge'],2);
+        $count_collect['handing_in_the_service_charge']=round($collect['sum(handing_in_the_service_charge)']+$count_collect['handing_in_the_service_charge'],2);
+        $count_collect['specified_price']=round($collect['sum(specified_price)']+ $count_collect['specified_price'],2);
+        $count_collect['quantity_per_hand']=round($collect['sum(quantity_per_hand)']+$count_collect['quantity_per_hand'],2);
+        $count_collect['mark_of_current_cost_calculation']=round($collect['sum(mark_of_current_cost_calculation)']+$count_collect['mark_of_current_cost_calculation'],2);
+        $count_collect['surcharge_1']=round($collect['sum(surcharge_1)']+$count_collect['surcharge_1'],2);
+        $count_collect['surcharge_2']=round($collect['sum(surcharge_2)']+$count_collect['surcharge_2'],2);
+        $count_collect['other_charges']=round($collect['sum(other_charges)']+$count_collect['other_charges'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='ruida_deposit_and_withdrawal'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['cash_in']=round($value['cash_in']+$page_collect['cash_in'],2);
+            $page_collect['cash_out']=round($value['cash_out']+$page_collect['cash_out'],2);
+            $page_collect['cash_in_and_out']=round($value['cash_in_and_out']+$page_collect['cash_in_and_out'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['cash_in']=round($collect['sum(cash_in)']+$count_collect['cash_in'],2);
+        $count_collect['cash_out']=round($collect['sum(cash_out)']+$count_collect['cash_out'],2);
+        $count_collect['cash_in_and_out']=round($collect['sum(cash_in_and_out)']+$count_collect['cash_in_and_out'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+
+    }elseif ($tableName=='huaxin_client_funds'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['beginning_equity']=round($value['beginning_equity']+$page_collect['beginning_equity'],2);
+            $page_collect['deposit']=round($value['deposit']+$page_collect['deposit'],2);
+            $page_collect['withdrawal']=round($value['withdrawal']+$page_collect['withdrawal'],2);
+            $page_collect['deposit_and_withdrawal']=round($value['deposit_and_withdrawal']+$page_collect['deposit_and_withdrawal'],2);
+            $page_collect['money_pledge_amount']=round($value['money_pledge_amount']+$page_collect['money_pledge_amount'],2);
+            $page_collect['money_pledge_amount_out']=round($value['money_pledge_amount_out']+$page_collect['money_pledge_amount_out'],2);
+            $page_collect['pledge_amount']=round($value['pledge_amount']+$page_collect['pledge_amount'],2);
+            $page_collect['change_amount_of_pledge']=round($value['change_amount_of_pledge']+$page_collect['change_amount_of_pledge'],2);
+            $page_collect['handling_fee']=round($value['handling_fee']+$page_collect['handling_fee'],2);
+            $page_collect['hand_in_fee']=round($value['hand_in_fee']+$page_collect['hand_in_fee'],2);
+            $page_collect['retention_fee']=round($value['retention_fee']+$page_collect['retention_fee'],2);
+            $page_collect['position_profit_and_loss']=round($value['position_profit_and_loss']+$page_collect['position_profit_and_loss'],2);
+            $page_collect['closing_profit_and_loss']=round($value['closing_profit_and_loss']+$page_collect['closing_profit_and_loss'],2);
+            $page_collect['total_profit_and_loss']=round($value['total_profit_and_loss']+$page_collect['total_profit_and_loss'],2);
+            $page_collect['investor_margin']=round($value['investor_margin']+$page_collect['investor_margin'],2);
+            $page_collect['occupation_of_money_pledge_deposit']=round($value['occupation_of_money_pledge_deposit']+$page_collect['occupation_of_money_pledge_deposit'],2);
+            $page_collect['exchange_margin']=round($value['exchange_margin']+$page_collect['exchange_margin'],2);
+            $page_collect['delivery_margin']=round($value['delivery_margin']+$page_collect['delivery_margin'],2);
+            $page_collect['margin_call']=round($value['margin_call']+$page_collect['margin_call'],2);
+            $page_collect['available_funds']=round($value['available_funds']+$page_collect['available_funds'],2);
+            $page_collect['investors_rights_and_interests']=round($value['investors_rights_and_interests']+$page_collect['investors_rights_and_interests'],2);
+            $page_collect['net_profit']=round($value['net_profit']+$page_collect['net_profit'],2);
+            $page_collect['ending_equity']=round($value['ending_equity']+$page_collect['ending_equity'],2);
+            $page_collect['exercise_fee']=round($value['exercise_fee']+$page_collect['exercise_fee'],2);
+            $page_collect['commission_for_exercise_of_stock_exchange']=round($value['commission_for_exercise_of_stock_exchange']+$page_collect['commission_for_exercise_of_stock_exchange'],2);
+            $page_collect['market_value_equity']=round($value['market_value_equity']+$page_collect['market_value_equity'],2);
+            $page_collect['market_value_of_options_long_positions']=round($value['market_value_of_options_long_positions']+$page_collect['market_value_of_options_long_positions'],2);
+            $page_collect['market_value_of_short_positions_in_options']=round($value['market_value_of_short_positions_in_options']+$page_collect['market_value_of_short_positions_in_options'],2);
+            $page_collect['income_from_option_premium']=round($value['income_from_option_premium']+$page_collect['income_from_option_premium'],2);
+            $page_collect['option_premium_expenditure']=round($value['option_premium_expenditure']+$page_collect['option_premium_expenditure'],2);
+            $page_collect['break_even_option']=round($value['break_even_option']+$page_collect['break_even_option'],2);
+            $page_collect['change_amount_of_currency_pledge']=round($value['change_amount_of_currency_pledge']+$page_collect['change_amount_of_currency_pledge'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['beginning_equity']=round($collect['sum(beginning_equity)']+$count_collect['beginning_equity'],2);
+        $count_collect['deposit']=round($collect['sum(deposit)']+$count_collect['deposit'],2);
+        $count_collect['withdrawal']=round($collect['sum(withdrawal)']+$count_collect['withdrawal'],2);
+        $count_collect['deposit_and_withdrawal']=round($collect['sum(deposit_and_withdrawal)']+$count_collect['deposit_and_withdrawal'],2);
+        $count_collect['money_pledge_amount']=round($collect['sum(money_pledge_amount)']+$count_collect['money_pledge_amount'],2);
+        $count_collect['money_pledge_amount_out']=round($collect['sum(money_pledge_amount_out)']+$count_collect['money_pledge_amount_out'],2);
+        $count_collect['pledge_amount']=round($collect['sum(pledge_amount)']+$count_collect['pledge_amount'],2);
+        $count_collect['change_amount_of_pledge']=round($collect['sum(change_amount_of_pledge)']+$count_collect['change_amount_of_pledge'],2);
+        $count_collect['handling_fee']=round($collect['sum(handling_fee)']+$count_collect['handling_fee'],2);
+        $count_collect['hand_in_fee']=round($collect['sum(hand_in_fee)']+$count_collect['hand_in_fee'],2);
+        $count_collect['retention_fee']=round($collect['sum(retention_fee)']+$count_collect['retention_fee'],2);
+        $count_collect['position_profit_and_loss']=round($collect['sum(position_profit_and_loss)']+$count_collect['position_profit_and_loss'],2);
+        $count_collect['closing_profit_and_loss']=round($collect['sum(closing_profit_and_loss)']+$count_collect['closing_profit_and_loss'],2);
+        $count_collect['total_profit_and_loss']=round($collect['sum(total_profit_and_loss)']+$count_collect['total_profit_and_loss'],2);
+        $count_collect['investor_margin']=round($collect['sum(investor_margin)']+$count_collect['investor_margin'],2);
+        $count_collect['occupation_of_money_pledge_deposit']=round($collect['sum(occupation_of_money_pledge_deposit)']+$count_collect['occupation_of_money_pledge_deposit'],2);
+        $count_collect['exchange_margin']=round($collect['sum(exchange_margin)']+$count_collect['exchange_margin'],2);
+        $count_collect['delivery_margin']=round($collect['sum(delivery_margin)']+$count_collect['delivery_margin'],2);
+        $count_collect['margin_call']=round($collect['sum(margin_call)']+$count_collect['margin_call'],2);
+        $count_collect['available_funds']=round($collect['sum(available_funds)']+$count_collect['available_funds'],2);
+        $count_collect['investors_rights_and_interests']=round($collect['sum(investors_rights_and_interests)']+$count_collect['investors_rights_and_interests'],2);
+        $count_collect['net_profit']=round($collect['sum(net_profit)']+$count_collect['net_profit'],2);
+        $count_collect['ending_equity']=round($collect['sum(ending_equity)']+$count_collect['ending_equity'],2);
+        $count_collect['exercise_fee']=round($collect['sum(exercise_fee)']+$count_collect['exercise_fee'],2);
+        $count_collect['commission_for_exercise_of_stock_exchange']=round($collect['sum(commission_for_exercise_of_stock_exchange)']+$count_collect['commission_for_exercise_of_stock_exchange'],2);
+        $count_collect['market_value_equity']=round($collect['sum(market_value_equity)']+$count_collect['market_value_equity'],2);
+        $count_collect['market_value_of_options_long_positions']=round($collect['sum(market_value_of_options_long_positions)']+$count_collect['market_value_of_options_long_positions'],2);
+        $count_collect['market_value_of_short_positions_in_options']=round($collect['sum(market_value_of_short_positions_in_options)']+$count_collect['market_value_of_short_positions_in_options'],2);
+        $count_collect['income_from_option_premium']=round($collect['sum(income_from_option_premium)']+$count_collect['income_from_option_premium'],2);
+        $count_collect['option_premium_expenditure']=round($collect['sum(option_premium_expenditure)']+$count_collect['option_premium_expenditure'],2);
+        $count_collect['break_even_option']=round($collect['sum(break_even_option)']+$count_collect['break_even_option'],2);
+        $count_collect['change_amount_of_currency_pledge']=round($collect['sum(change_amount_of_currency_pledge)']+$count_collect['change_amount_of_currency_pledge'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='huaxin_transaction'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['service_charge']=round($value['service_charge']+$page_collect['service_charge'],2);
+            $page_collect['handing_in_the_service_charge']=round($value['handing_in_the_service_charge']+$page_collect['handing_in_the_service_charge'],2);
+            $page_collect['retention_fee']=round($value['retention_fee']+$page_collect['retention_fee'],2);
+            $page_collect['profit_and_loss']=round($value['profit_and_loss']+$page_collect['profit_and_loss'],2);
+            $page_collect['total_volume']=round($value['total_volume']+$page_collect['total_volume'],2);
+            $page_collect['trading_volume_of_the_platform']=round($value['trading_volume_of_the_platform']+$page_collect['trading_volume_of_the_platform'],2);
+            $page_collect['average_volume']=round($value['average_volume']+$page_collect['average_volume'],2);
+            $page_collect['average_amount_of_fees_charged_on_this_platform']=round($value['average_amount_of_fees_charged_on_this_platform']+$page_collect['average_amount_of_fees_charged_on_this_platform'],2);
+            $page_collect['this_platform_is_free_of_charge']=round($value['this_platform_is_free_of_charge']+$page_collect['this_platform_is_free_of_charge'],2);
+            $page_collect['turnover']=round($value['turnover']+$page_collect['turnover'],2);
+            $page_collect['current_turnover']=round($value['current_turnover']+$page_collect['current_turnover'],2);
+            $page_collect['closing_profit_and_loss']=round($value['closing_profit_and_loss']+$page_collect['closing_profit_and_loss'],2);
+            $page_collect['position_profit_and_loss']=round($value['position_profit_and_loss']+$page_collect['position_profit_and_loss'],2);
+            $page_collect['net_profit']=round($value['net_profit']+$page_collect['net_profit'],2);
+            $page_collect['delivery_commission']=round($value['delivery_commission']+$page_collect['delivery_commission'],2);
+            $page_collect['delivery_service_charge']=round($value['delivery_service_charge']+$page_collect['delivery_service_charge'],2);
+            $page_collect['handling_fee_for_retained_delivery']=round($value['handling_fee_for_retained_delivery']+$page_collect['handling_fee_for_retained_delivery'],2);
+            $page_collect['delivery_quantity']=round($value['delivery_quantity']+$page_collect['delivery_quantity'],2);
+            $page_collect['buy_holding']=round($value['buy_holding']+$page_collect['buy_holding'],2);
+            $page_collect['sales_volume']=round($value['sales_volume']+$page_collect['sales_volume'],2);
+            $page_collect['investor_margin']=round($value['investor_margin']+$page_collect['investor_margin'],2);
+            $page_collect['exchange_margin']=round($value['exchange_margin']+$page_collect['exchange_margin'],2);
+            $page_collect['market_value_of_long_options']=round($value['market_value_of_long_options']+$page_collect['market_value_of_long_options'],2);
+            $page_collect['market_value_of_short_options']=round($value['market_value_of_short_options']+$page_collect['market_value_of_short_options'],2);
+            $page_collect['royalty_income']=round($value['royalty_income']+$page_collect['royalty_income'],2);
+            $page_collect['royalty_payment']=round($value['royalty_payment']+$page_collect['royalty_payment'],2);
+            $page_collect['commission_for_exercise_of_stock_exchange']=round($value['commission_for_exercise_of_stock_exchange']+$page_collect['commission_for_exercise_of_stock_exchange'],2);
+            $page_collect['exercise_fee']=round($value['exercise_fee']+$page_collect['exercise_fee'],2);
+            $page_collect['operating_profit_and_loss']=round($value['operating_profit_and_loss']+$page_collect['operating_profit_and_loss'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['service_charge']=round($collect['sum(service_charge)']+$count_collect['service_charge'],2);
+        $count_collect['handing_in_the_service_charge']=round($collect['sum(handing_in_the_service_charge)']+$count_collect['handing_in_the_service_charge'],2);
+        $count_collect['retention_fee']=round($collect['sum(retention_fee)']+$count_collect['retention_fee'],2);
+        $count_collect['profit_and_loss']=round($collect['sum(profit_and_loss)']+$count_collect['profit_and_loss'],2);
+        $count_collect['total_volume']=round($collect['sum(total_volume)']+$count_collect['total_volume'],2);
+        $count_collect['trading_volume_of_the_platform']=round($collect['sum(trading_volume_of_the_platform)']+$count_collect['trading_volume_of_the_platform'],2);
+        $count_collect['average_volume']=round($collect['sum(average_volume)']+$count_collect['average_volume'],2);
+        $count_collect['average_amount_of_fees_charged_on_this_platform']=round($collect['sum(average_amount_of_fees_charged_on_this_platform)']+$count_collect['average_amount_of_fees_charged_on_this_platform'],2);
+        $count_collect['this_platform_is_free_of_charge']=round($collect['sum(this_platform_is_free_of_charge)']+$count_collect['this_platform_is_free_of_charge'],2);
+        $count_collect['turnover']=round($collect['sum(turnover)']+$count_collect['turnover'],2);
+        $count_collect['current_turnover']=round($collect['sum(current_turnover)']+$count_collect['current_turnover'],2);
+        $count_collect['closing_profit_and_loss']=round($collect['sum(closing_profit_and_loss)']+$count_collect['closing_profit_and_loss'],2);
+        $count_collect['position_profit_and_loss']=round($collect['sum(position_profit_and_loss)']+$count_collect['position_profit_and_loss'],2);
+        $count_collect['net_profit']=round($collect['sum(net_profit)']+$count_collect['net_profit'],2);
+        $count_collect['delivery_commission']=round($collect['sum(delivery_commission)']+$count_collect['delivery_commission'],2);
+        $count_collect['delivery_service_charge']=round($collect['sum(delivery_service_charge)']+$count_collect['delivery_service_charge'],2);
+        $count_collect['handling_fee_for_retained_delivery']=round($collect['sum(handling_fee_for_retained_delivery)']+$count_collect['handling_fee_for_retained_delivery'],2);
+        $count_collect['delivery_quantity']=round($collect['sum(delivery_quantity)']+$count_collect['delivery_quantity'],2);
+        $count_collect['buy_holding']=round($collect['sum(buy_holding)']+$count_collect['buy_holding'],2);
+        $count_collect['sales_volume']=round($collect['sum(sales_volume)']+$count_collect['sales_volume'],2);
+        $count_collect['investor_margin']=round($collect['sum(investor_margin)']+$count_collect['investor_margin'],2);
+        $count_collect['exchange_margin']=round($collect['sum(exchange_margin)']+$count_collect['exchange_margin'],2);
+        $count_collect['market_value_of_long_options']=round($collect['sum(market_value_of_long_options)']+$count_collect['market_value_of_long_options'],2);
+        $count_collect['market_value_of_short_options']=round($collect['sum(market_value_of_short_options)']+$count_collect['market_value_of_short_options'],2);
+        $count_collect['royalty_income']=round($collect['sum(royalty_income)']+$count_collect['royalty_income'],2);
+        $count_collect['royalty_payment']=round($collect['sum(royalty_payment)']+$count_collect['royalty_payment'],2);
+        $count_collect['commission_for_exercise_of_stock_exchange']=round($collect['sum(commission_for_exercise_of_stock_exchange)']+$count_collect['commission_for_exercise_of_stock_exchange'],2);
+        $count_collect['exercise_fee']=round($collect['sum(exercise_fee)']+$count_collect['exercise_fee'],2);
+        $count_collect['operating_profit_and_loss']=round($collect['sum(operating_profit_and_loss)']+$count_collect['operating_profit_and_loss'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='huaxin_deposit_and_withdrawal'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['cash_in']=round($value['cash_in']+$page_collect['cash_in'],2);
+            $page_collect['cash_out']=round($value['cash_out']+$page_collect['cash_out'],2);
+            $page_collect['cash_in_and_out']=round($value['cash_in_and_out']+$page_collect['cash_in_and_out'],2);
+            $page_collect['number_of_gold_entries']=round($value['number_of_gold_entries']+$page_collect['number_of_gold_entries'],2);
+            $page_collect['gold_output']=round($value['gold_output']+$page_collect['gold_output'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['cash_in']=round($collect['sum(cash_in)']+$count_collect['cash_in'],2);
+        $count_collect['cash_out']=round($collect['sum(cash_out)']+$count_collect['cash_out'],2);
+        $count_collect['cash_in_and_out']=round($collect['sum(cash_in_and_out)']+$count_collect['cash_in_and_out'],2);
+        $count_collect['number_of_gold_entries']=round($collect['sum(number_of_gold_entries)']+$count_collect['number_of_gold_entries'],2);
+        $count_collect['gold_output']=round($collect['sum(gold_output)']+$count_collect['gold_output'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='huaixn_history'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['number']=round($value['number']+$page_collect['number'],2);
+            $page_collect['price']=round($value['price']+$page_collect['price'],2);
+            $page_collect['exchange_commission']=round($value['exchange_commission']+$page_collect['exchange_commission'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['number']=round($collect['sum(number)']+$count_collect['number'],2);
+        $count_collect['price']=round($collect['sum(price)']+$count_collect['price'],2);
+        $count_collect['exchange_commission']=round($collect['sum(exchange_commission)']+$count_collect['exchange_commission'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='jinkong_client_funds'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['equity_at_the_beginning_of_the_period']=round($value['equity_at_the_beginning_of_the_period']+$page_collect['equity_at_the_beginning_of_the_period'],2);
+            $page_collect['deposit']=round($value['deposit']+$page_collect['deposit'],2);
+            $page_collect['withdrawal']=round($value['withdrawal']+$page_collect['withdrawal'],2);
+            $page_collect['deposit_and_withdrawal']=round($value['deposit_and_withdrawal']+$page_collect['deposit_and_withdrawal'],2);
+            $page_collect['money_pledge_amount']=round($value['money_pledge_amount']+$page_collect['money_pledge_amount'],2);
+            $page_collect['change_of_currency_pledge']=round($value['change_of_currency_pledge']+$page_collect['change_of_currency_pledge'],2);
+            $page_collect['declaration_fee']=round($value['declaration_fee']+$page_collect['declaration_fee'],2);
+            $page_collect['hand_in_fee']=round($value['hand_in_fee']+$page_collect['hand_in_fee'],2);
+            $page_collect['retention_fee']=round($value['retention_fee']+$page_collect['retention_fee'],2);
+            $page_collect['investor_protection_fund']=round($value['investor_protection_fund']+$page_collect['investor_protection_fund'],2);
+            $page_collect['handling_charge_turnover_rate']=round($value['handling_charge_turnover_rate']+$page_collect['handling_charge_turnover_rate'],2);
+            $page_collect['software_cost']=round($value['software_cost']+$page_collect['software_cost'],2);
+            $page_collect['returning_a_servant']=round($value['returning_a_servant']+$page_collect['returning_a_servant'],2);
+            $page_collect['net_retention_fee']=round($value['net_retention_fee']+$page_collect['net_retention_fee'],2);
+            $page_collect['number_of_transactions']=round($value['number_of_transactions']+$page_collect['number_of_transactions'],2);
+            $page_collect['transaction_amount']=round($value['transaction_amount']+$page_collect['transaction_amount'],2);
+            $page_collect['today_hand_count']=round($value['today_hand_count']+$page_collect['today_hand_count'],2);
+            $page_collect['today_current_turnover']=round($value['today_current_turnover']+$page_collect['today_current_turnover'],2);
+            $page_collect['total_profit_and_loss']=round($value['total_profit_and_loss']+$page_collect['total_profit_and_loss'],2);
+            $page_collect['position_profit_and_loss']=round($value['position_profit_and_loss']+$page_collect['position_profit_and_loss'],2);
+            $page_collect['closing_profit_and_loss']=round($value['closing_profit_and_loss']+$page_collect['closing_profit_and_loss'],2);
+            $page_collect['ending_equity']=round($value['ending_equity']+$page_collect['ending_equity'],2);
+            $page_collect['investor_margin']=round($value['investor_margin']+$page_collect['investor_margin'],2);
+            $page_collect['exchange_margin']=round($value['exchange_margin']+$page_collect['exchange_margin'],2);
+            $page_collect['Risk_1']=round($value['Risk_1']+$page_collect['Risk_1'],2);
+            $page_collect['Risk_2']=round($value['Risk_2']+$page_collect['Risk_2'],2);
+            $page_collect['available_funds']=round($value['available_funds']+$page_collect['available_funds'],2);
+            $page_collect['occupation_of_money_pledge_deposit']=round($value['occupation_of_money_pledge_deposit']+$page_collect['occupation_of_money_pledge_deposit'],2);
+            $page_collect['pledge_amount']=round($value['pledge_amount']+$page_collect['pledge_amount'],2);
+            $page_collect['customer_equity_peak']=round($value['customer_equity_peak']+$page_collect['customer_equity_peak'],2);
+            $page_collect['customer_margin_peak']=round($value['customer_margin_peak']+$page_collect['customer_margin_peak'],2);
+            $page_collect['peak_amount_of_funds_available_to_customers']=round($value['peak_amount_of_funds_available_to_customers']+$page_collect['peak_amount_of_funds_available_to_customers'],2);
+            $page_collect['daily_average_exchange_available']=round($value['daily_average_exchange_available']+$page_collect['daily_average_exchange_available'],2);
+            $page_collect['daily_daily_average_company_available']=round($value['daily_daily_average_company_available']+$page_collect['daily_daily_average_company_available'],2);
+            $page_collect['daily_average_at_home']=round($value['daily_average_at_home']+$page_collect['daily_average_at_home'],2);
+            $page_collect['average_daily_equity']=round($value['average_daily_equity']+$page_collect['average_daily_equity'],2);
+            $page_collect['exercise_fee']=round($value['exercise_fee']+$page_collect['exercise_fee'],2);
+            $page_collect['commission_for_exercise_of_stock_exchange']=round($value['commission_for_exercise_of_stock_exchange']+$page_collect['commission_for_exercise_of_stock_exchange'],2);
+            $page_collect['performance_fee']=round($value['performance_fee']+$page_collect['performance_fee'],2);
+            $page_collect['service_charge_for_performance_of_the_exchange']=round($value['service_charge_for_performance_of_the_exchange']+$page_collect['service_charge_for_performance_of_the_exchange'],2);
+            $page_collect['market_value_equity']=round($value['market_value_equity']+$page_collect['market_value_equity'],2);
+            $page_collect['market_value_of_options_long_positions']=round($value['market_value_of_options_long_positions']+$page_collect['market_value_of_options_long_positions'],2);
+            $page_collect['market_value_of_short_positions_in_options']=round($value['market_value_of_short_positions_in_options']+$page_collect['market_value_of_short_positions_in_options'],2);
+            $page_collect['income_from_option_premium']=round($value['income_from_option_premium']+$page_collect['income_from_option_premium'],2);
+            $page_collect['option_premium_expenditure']=round($value['option_premium_expenditure']+$page_collect['option_premium_expenditure'],2);
+            $page_collect['profit_and_loss_of_option_exercise']=round($value['profit_and_loss_of_option_exercise']+$page_collect['profit_and_loss_of_option_exercise'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['equity_at_the_beginning_of_the_period']=round($collect['sum(equity_at_the_beginning_of_the_period)']+$count_collect['equity_at_the_beginning_of_the_period'],2);
+        $count_collect['deposit']=round($collect['sum(deposit)']+$count_collect['deposit'],2);
+        $count_collect['withdrawal']=round($collect['sum(withdrawal)']+$count_collect['withdrawal'],2);
+        $count_collect['deposit_and_withdrawal']=round($collect['sum(deposit_and_withdrawal)']+$count_collect['deposit_and_withdrawal'],2);
+        $count_collect['money_pledge_amount']=round($collect['sum(money_pledge_amount)']+$count_collect['money_pledge_amount'],2);
+        $count_collect['change_of_currency_pledge']=round($collect['sum(change_of_currency_pledge)']+$count_collect['change_of_currency_pledge'],2);
+        $count_collect['declaration_fee']=round($collect['sum(declaration_fee)']+$count_collect['declaration_fee'],2);
+        $count_collect['hand_in_fee']=round($collect['sum(hand_in_fee)']+$count_collect['hand_in_fee'],2);
+        $count_collect['retention_fee']=round($collect['sum(retention_fee)']+$count_collect['retention_fee'],2);
+        $count_collect['investor_protection_fund']=round($collect['sum(investor_protection_fund)']+$count_collect['investor_protection_fund'],2);
+        $count_collect['handling_charge_turnover_rate']=round($collect['sum(handling_charge_turnover_rate)']+$count_collect['handling_charge_turnover_rate'],2);
+        $count_collect['software_cost']=round($collect['sum(software_cost)']+$count_collect['software_cost'],2);
+        $count_collect['returning_a_servant']=round($collect['sum(returning_a_servant)']+$count_collect['returning_a_servant'],2);
+        $count_collect['net_retention_fee']=round($collect['sum(net_retention_fee)']+$count_collect['net_retention_fee'],2);
+        $count_collect['number_of_transactions']=round($collect['sum(number_of_transactions)']+$count_collect['number_of_transactions'],2);
+        $count_collect['transaction_amount']=round($collect['sum(transaction_amount)']+$count_collect['transaction_amount'],2);
+        $count_collect['today_hand_count']=round($collect['sum(today_hand_count)']+$count_collect['today_hand_count'],2);
+        $count_collect['today_current_turnover']=round($collect['sum(today_current_turnover)']+$count_collect['today_current_turnover'],2);
+        $count_collect['total_profit_and_loss']=round($collect['sum(total_profit_and_loss)']+$count_collect['total_profit_and_loss'],2);
+        $count_collect['position_profit_and_loss']=round($collect['sum(position_profit_and_loss)']+$count_collect['position_profit_and_loss'],2);
+        $count_collect['closing_profit_and_loss']=round($collect['sum(closing_profit_and_loss)']+$count_collect['closing_profit_and_loss'],2);
+        $count_collect['ending_equity']=round($collect['sum(ending_equity)']+$count_collect['ending_equity'],2);
+        $count_collect['investor_margin']=round($collect['sum(investor_margin)']+$count_collect['investor_margin'],2);
+        $count_collect['exchange_margin']=round($collect['sum(exchange_margin)']+$count_collect['exchange_margin'],2);
+        $count_collect['Risk_1']=round($collect['sum(Risk_1)']+$count_collect['Risk_1'],2);
+        $count_collect['Risk_2']=round($collect['sum(Risk_2)']+$count_collect['Risk_2'],2);
+        $count_collect['available_funds']=round($collect['sum(available_funds)']+$count_collect['available_funds'],2);
+        $count_collect['occupation_of_money_pledge_deposit']=round($collect['sum(occupation_of_money_pledge_deposit)']+$count_collect['occupation_of_money_pledge_deposit'],2);
+        $count_collect['pledge_amount']=round($collect['sum(pledge_amount)']+$count_collect['pledge_amount'],2);
+        $count_collect['customer_equity_peak']=round($collect['sum(customer_equity_peak)']+$count_collect['customer_equity_peak'],2);
+        $count_collect['customer_margin_peak']=round($collect['sum(customer_margin_peak)']+$count_collect['customer_margin_peak'],2);
+        $count_collect['peak_amount_of_funds_available_to_customers']=round($collect['sum(peak_amount_of_funds_available_to_customers)']+$count_collect['peak_amount_of_funds_available_to_customers'],2);
+        $count_collect['daily_average_exchange_available']=round($collect['sum(daily_average_exchange_available)']+$count_collect['daily_average_exchange_available'],2);
+        $count_collect['daily_daily_average_company_available']=round($collect['sum(daily_daily_average_company_available)']+$count_collect['daily_daily_average_company_available'],2);
+        $count_collect['daily_average_at_home']=round($collect['sum(daily_average_at_home)']+$count_collect['daily_average_at_home'],2);
+        $count_collect['average_daily_equity']=round($collect['sum(average_daily_equity)']+$count_collect['average_daily_equity'],2);
+        $count_collect['exercise_fee']=round($collect['sum(exercise_fee)']+$count_collect['exercise_fee'],2);
+        $count_collect['commission_for_exercise_of_stock_exchange']=round($collect['sum(commission_for_exercise_of_stock_exchange)']+$count_collect['commission_for_exercise_of_stock_exchange'],2);
+        $count_collect['performance_fee']=round($collect['sum(performance_fee)']+$count_collect['performance_fee'],2);
+        $count_collect['service_charge_for_performance_of_the_exchange']=round($collect['sum(service_charge_for_performance_of_the_exchange)']+$count_collect['service_charge_for_performance_of_the_exchange'],2);
+        $count_collect['market_value_equity']=round($collect['sum(market_value_equity)']+$count_collect['market_value_equity'],2);
+        $count_collect['market_value_of_options_long_positions']=round($collect['sum(market_value_of_options_long_positions)']+$count_collect['market_value_of_options_long_positions'],2);
+        $count_collect['market_value_of_short_positions_in_options']=round($collect['sum(market_value_of_short_positions_in_options)']+$count_collect['market_value_of_short_positions_in_options'],2);
+        $count_collect['income_from_option_premium']=round($collect['sum(income_from_option_premium)']+$count_collect['income_from_option_premium'],2);
+        $count_collect['option_premium_expenditure']=round($collect['sum(option_premium_expenditure)']+$count_collect['option_premium_expenditure'],2);
+        $count_collect['profit_and_loss_of_option_exercise']=round($collect['sum(profit_and_loss_of_option_exercise)']+$count_collect['profit_and_loss_of_option_exercise'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='jinkong_transaction'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['service_charge']=round($value['service_charge']+$page_collect['service_charge'],2);
+            $page_collect['handing_in_the_service_charge']=round($value['handing_in_the_service_charge']+$page_collect['handing_in_the_service_charge'],2);
+            $page_collect['retention_fee']=round($value['retention_fee']+$page_collect['retention_fee'],2);
+            $page_collect['profit_and_loss']=round($value['profit_and_loss']+$page_collect['profit_and_loss'],2);
+            $page_collect['total_volume']=round($value['total_volume']+$page_collect['total_volume'],2);
+            $page_collect['trading_volume_of_the_platform']=round($value['trading_volume_of_the_platform']+$page_collect['trading_volume_of_the_platform'],2);
+            $page_collect['average_volume']=round($value['average_volume']+$page_collect['average_volume'],2);
+            $page_collect['average_amount_of_fees_charged_on_this_platform']=round($value['average_amount_of_fees_charged_on_this_platform']+$page_collect['average_amount_of_fees_charged_on_this_platform'],2);
+            $page_collect['this_platform_is_free_of_charge']=round($value['this_platform_is_free_of_charge']+$page_collect['this_platform_is_free_of_charge'],2);
+            $page_collect['turnover']=round($value['turnover']+$page_collect['turnover'],2);
+            $page_collect['current_turnover']=round($value['current_turnover']+$page_collect['current_turnover'],2);
+            $page_collect['closing_profit_and_loss']=round($value['closing_profit_and_loss']+$page_collect['closing_profit_and_loss'],2);
+            $page_collect['position_profit_and_loss']=round($value['position_profit_and_loss']+$page_collect['position_profit_and_loss'],2);
+            $page_collect['net_profit']=round($value['net_profit']+$page_collect['net_profit'],2);
+            $page_collect['delivery_commission']=round($value['delivery_commission']+$page_collect['delivery_commission'],2);
+            $page_collect['delivery_service_charge']=round($value['delivery_service_charge']+$page_collect['delivery_service_charge'],2);
+            $page_collect['handling_fee_for_retained_delivery']=round($value['handling_fee_for_retained_delivery']+$page_collect['handling_fee_for_retained_delivery'],2);
+            $page_collect['delivery_quantity']=round($value['delivery_quantity']+$page_collect['delivery_quantity'],2);
+            $page_collect['buy_holding']=round($value['buy_holding']+$page_collect['buy_holding'],2);
+            $page_collect['sales_volume']=round($value['sales_volume']+$page_collect['sales_volume'],2);
+            $page_collect['investor_margin']=round($value['investor_margin']+$page_collect['investor_margin'],2);
+            $page_collect['exchange_margin']=round($value['exchange_margin']+$page_collect['exchange_margin'],2);
+            $page_collect['market_value_of_long_options']=round($value['market_value_of_long_options']+$page_collect['market_value_of_long_options'],2);
+            $page_collect['market_value_of_short_options']=round($value['market_value_of_short_options']+$page_collect['market_value_of_short_options'],2);
+            $page_collect['royalty_income']=round($value['royalty_income']+$page_collect['royalty_income'],2);
+            $page_collect['royalty_payment']=round($value['royalty_payment']+$page_collect['royalty_payment'],2);
+            $page_collect['commission_for_exercise_of_stock_exchange']=round($value['commission_for_exercise_of_stock_exchange']+$page_collect['commission_for_exercise_of_stock_exchange'],2);
+            $page_collect['exercise_fee']=round($value['exercise_fee']+$page_collect['exercise_fee'],2);
+            $page_collect['operating_profit_and_loss']=round($value['operating_profit_and_loss']+$page_collect['operating_profit_and_loss'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['service_charge']=round($collect['sum(service_charge)']+$count_collect['service_charge'],2);
+        $count_collect['handing_in_the_service_charge']=round($collect['sum(handing_in_the_service_charge)']+$count_collect['handing_in_the_service_charge'],2);
+        $count_collect['retention_fee']=round($collect['sum(retention_fee)']+$count_collect['retention_fee'],2);
+        $count_collect['profit_and_loss']=round($collect['sum(profit_and_loss)']+$count_collect['profit_and_loss'],2);
+        $count_collect['total_volume']=round($collect['sum(total_volume)']+$count_collect['total_volume'],2);
+        $count_collect['trading_volume_of_the_platform']=round($collect['sum(trading_volume_of_the_platform)']+$count_collect['trading_volume_of_the_platform'],2);
+        $count_collect['average_volume']=round($collect['sum(average_volume)']+$count_collect['average_volume'],2);
+        $count_collect['average_amount_of_fees_charged_on_this_platform']=round($collect['sum(average_amount_of_fees_charged_on_this_platform)']+$count_collect['average_amount_of_fees_charged_on_this_platform'],2);
+        $count_collect['this_platform_is_free_of_charge']=round($collect['sum(this_platform_is_free_of_charge)']+$count_collect['this_platform_is_free_of_charge'],2);
+        $count_collect['turnover']=round($collect['sum(turnover)']+$count_collect['turnover'],2);
+        $count_collect['current_turnover']=round($collect['sum(current_turnover)']+$count_collect['current_turnover'],2);
+        $count_collect['closing_profit_and_loss']=round($collect['sum(closing_profit_and_loss)']+$count_collect['closing_profit_and_loss'],2);
+        $count_collect['position_profit_and_loss']=round($collect['sum(position_profit_and_loss)']+$count_collect['position_profit_and_loss'],2);
+        $count_collect['net_profit']=round($collect['sum(net_profit)']+$count_collect['net_profit'],2);
+        $count_collect['delivery_commission']=round($collect['sum(delivery_commission)']+$count_collect['delivery_commission'],2);
+        $count_collect['delivery_service_charge']=round($collect['sum(delivery_service_charge)']+$count_collect['delivery_service_charge'],2);
+        $count_collect['handling_fee_for_retained_delivery']=round($collect['sum(handling_fee_for_retained_delivery)']+$count_collect['handling_fee_for_retained_delivery'],2);
+        $count_collect['delivery_quantity']=round($collect['sum(delivery_quantity)']+$count_collect['delivery_quantity'],2);
+        $count_collect['buy_holding']=round($collect['sum(buy_holding)']+$count_collect['buy_holding'],2);
+        $count_collect['sales_volume']=round($collect['sum(sales_volume)']+$count_collect['sales_volume'],2);
+        $count_collect['investor_margin']=round($collect['sum(investor_margin)']+$count_collect['investor_margin'],2);
+        $count_collect['exchange_margin']=round($collect['sum(exchange_margin)']+$count_collect['exchange_margin'],2);
+        $count_collect['market_value_of_long_options']=round($collect['sum(market_value_of_long_options)']+$count_collect['market_value_of_long_options'],2);
+        $count_collect['market_value_of_short_options']=round($collect['sum(market_value_of_short_options)']+$count_collect['market_value_of_short_options'],2);
+        $count_collect['royalty_income']=round($collect['sum(royalty_income)']+$count_collect['royalty_income'],2);
+        $count_collect['royalty_payment']=round($collect['sum(royalty_payment)']+$count_collect['royalty_payment'],2);
+        $count_collect['commission_for_exercise_of_stock_exchange']=round($collect['sum(commission_for_exercise_of_stock_exchange)']+$count_collect['commission_for_exercise_of_stock_exchange'],2);
+        $count_collect['exercise_fee']=round($collect['sum(exercise_fee)']+$count_collect['exercise_fee'],2);
+        $count_collect['operating_profit_and_loss']=round($collect['sum(operating_profit_and_loss)']+$count_collect['operating_profit_and_loss'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='jinkong_deposit_and_withdrawal'){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['cash_in']=round($value['cash_in']+$page_collect['cash_in'],2);
+            $page_collect['cash_out']=round($value['cash_out']+$page_collect['cash_out'],2);
+            $page_collect['cash_in_and_out']=round($value['cash_in_and_out']+$page_collect['cash_in_and_out'],2);
+            $page_collect['number_of_gold_entries']=round($value['number_of_gold_entries']+$page_collect['number_of_gold_entries'],2);
+            $page_collect['gold_output']=round($value['gold_output']+$page_collect['gold_output'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['cash_in']=round($collect['sum(cash_in)']+$count_collect['cash_in'],2);
+        $count_collect['cash_out']=round($collect['sum(cash_out)']+$count_collect['cash_out'],2);
+        $count_collect['cash_in_and_out']=round($collect['sum(cash_in_and_out)']+$count_collect['cash_in_and_out'],2);
+        $count_collect['number_of_gold_entries']=round($collect['sum(number_of_gold_entries)']+$count_collect['number_of_gold_entries'],2);
+        $count_collect['gold_output']=round($collect['sum(gold_output)']+$count_collect['gold_output'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }
     $data = [
       'code' => '1',
       'message' => '获取成功',
-      'pages_count' => ceil($tableData['count'] / 10),
-      'data' => $tableData['data']
+      'pages_count' => ceil($tableData['count'] / 30),
+      'data' => $data
     ];
 
     return json_encode($data);
