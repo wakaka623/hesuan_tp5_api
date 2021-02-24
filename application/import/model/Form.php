@@ -629,6 +629,31 @@ class Form extends Model
                 unset($arr['摘要']);
             }
         }
+    }if ($isadmin=='0'||$isadmin== '2' && $tableName=="jinkong_chengjiaobiao"){
+        foreach ($arr as $key => $v){
+            if ($key=='transaction_type'&& $v=='成交类型'){
+                unset($arr['transaction_type']);
+                unset($arr['成交类型']);
+            }elseif ($key=='transaction_num'&&$v=='成交编号'){
+                unset($arr['transaction_num']);
+                unset($arr['成交编号']);
+            }elseif ($key=='sign_of_insurance'&& $v=='投保标志'){
+                unset($arr['sign_of_insurance']);
+                unset($arr['投保标志']);
+            }elseif ($key=='handing_in_service_charge'&& $v=='上交手续费'){
+                unset($arr['handing_in_service_charge']);
+                unset($arr['上交手续费']);
+            }elseif ($key=='retention_fee'&& $v=='留存手续费'){
+                unset($arr['retention_fee']);
+                unset($arr['留存手续费']);
+            }elseif ($key=='royalty_income'&& $v=='权利金收入'){
+                unset($arr['royalty_income']);
+                unset($arr['权利金收入']);
+            }elseif ($key=='royalty_payment'&& $v=='权利金支出'){
+                unset($arr['royalty_payment']);
+                unset($arr['权利金支出']);
+            }
+        }
     }
     return $arr;
   }
@@ -680,7 +705,13 @@ class Form extends Model
         if($isadmin== '2' && $tableName=="hengyin_transaction"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -739,7 +770,13 @@ class Form extends Model
         }elseif ($isadmin=='0' && $tableName=="hengyin_transaction"){
             if (($startDate && $endtDate) || $account || $customerame ||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -799,7 +836,13 @@ class Form extends Model
         }elseif ($isadmin=='2' && $tableName=="hengyin_client_funds"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate and $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -866,7 +909,13 @@ class Form extends Model
         }elseif ($isadmin=='0' && $tableName=="hengyin_client_funds"){
             if (($startDate && $endtDate) || $account || $customerame ||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -933,7 +982,13 @@ class Form extends Model
         }elseif ($isadmin=='2' && $tableName=="sanli_client_funds"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -997,7 +1052,13 @@ class Form extends Model
         }elseif ($isadmin=='0' && $tableName=="sanli_client_funds"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1061,7 +1122,13 @@ class Form extends Model
         }elseif ($isadmin=='2' && $tableName=="sanli_transaction"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1124,7 +1191,13 @@ class Form extends Model
         }elseif ($isadmin=='0' && $tableName=="sanli_transaction"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1187,7 +1260,13 @@ class Form extends Model
         }elseif ($isadmin=='2'&& $tableName=="ruida_client_funds"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1259,7 +1338,13 @@ class Form extends Model
         }elseif ($isadmin=='0'&& $tableName=="ruida_client_funds"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1331,7 +1416,13 @@ class Form extends Model
         }elseif ($isadmin=='2'&& $tableName=="ruida_transaction"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1396,7 +1487,13 @@ class Form extends Model
         }elseif ($isadmin=='0'&& $tableName=="ruida_transaction"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1461,7 +1558,13 @@ class Form extends Model
         }elseif ($isadmin=='2'&& $tableName=="ruida_deposit_and_withdrawal"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1522,7 +1625,13 @@ class Form extends Model
         }elseif ($isadmin=='0'&& $tableName=="ruida_deposit_and_withdrawal"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1583,7 +1692,13 @@ class Form extends Model
         }elseif ($isadmin=='2'&& $tableName=="huaxin_client_funds"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1652,7 +1767,13 @@ class Form extends Model
         }elseif ($isadmin=='0'&& $tableName=="huaxin_client_funds"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1721,7 +1842,13 @@ class Form extends Model
         }elseif ($isadmin=='2'&& $tableName=="huaxin_transaction"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1786,7 +1913,13 @@ class Form extends Model
         }elseif ($isadmin=='0'&& $tableName=="huaxin_transaction"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1851,7 +1984,13 @@ class Form extends Model
         }elseif ($isadmin=='2'&& $tableName=="huaxin_deposit_and_withdrawal"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1909,7 +2048,13 @@ class Form extends Model
         }elseif ($isadmin=='0'&& $tableName=="huaxin_deposit_and_withdrawal"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -1967,7 +2112,13 @@ class Form extends Model
         }elseif ($isadmin=='2'&& $tableName=="huaixn_history"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -2025,7 +2176,13 @@ class Form extends Model
         }elseif ($isadmin=='0'&& $tableName=="huaixn_history"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -2083,7 +2240,13 @@ class Form extends Model
         }elseif ($isadmin=='2'&& $tableName=="jinkong_client_funds"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -2157,7 +2320,13 @@ class Form extends Model
         }elseif ($isadmin=='0'&& $tableName=="jinkong_client_funds"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -2231,7 +2400,13 @@ class Form extends Model
         }elseif ($isadmin=='2'&& $tableName=="jinkong_transaction"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -2293,7 +2468,13 @@ class Form extends Model
         }elseif ($isadmin=='0'&& $tableName=="jinkong_transaction"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -2355,7 +2536,13 @@ class Form extends Model
         }elseif ($isadmin=='2'&& $tableName=="jinkong_deposit_and_withdrawal"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -2413,7 +2600,13 @@ class Form extends Model
         }elseif ($isadmin=='0'&& $tableName=="jinkong_deposit_and_withdrawal"){
             if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
                 if ($startDate && $endtDate){
-                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
                 }else{
                     $where=true;
                 }
@@ -2468,11 +2661,146 @@ class Form extends Model
                     ->where($where1)
                     ->count();
             }
-
+        }elseif ($isadmin=='2'&& $tableName=="jinkong_chengjiaobiao"){
+            if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
+                if ($startDate && $endtDate){
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
+                }else{
+                    $where=true;
+                }
+                if ($account && $customerame&& $searchGroup){
+                    $where1=array(
+                        'customer_number'=>$account,
+                        'customer_name'=>$customerame,
+                        'groups'=>$searchGroup
+                    );
+                }elseif ($account&&$searchGroup){
+                    $where1=array(
+                        'customer_number'=>$account,
+                        'groups'=>$searchGroup
+                    );
+                }elseif ($customerame&&$searchGroup){
+                    $where1=array(
+                        'customer_name'=>$customerame,
+                        'groups'=>$searchGroup
+                    );
+                }elseif ($account){
+                    $where1=array(
+                        'customer_number'=>$account
+                    );
+                }elseif ($customerame){
+                    $where1=array(
+                        'customer_name'=>$customerame
+                    );
+                }elseif ($searchGroup){
+                    $where1=array(
+                        'groups'=>$searchGroup
+                    );
+                }else{
+                    $where1=true;
+                }
+                $data = DB::name($tableName)
+                    ->where('groups','like',$group .'%')
+                    ->where($where)
+                    ->where($where1)
+                    ->order($where3)
+                    ->hidden(['transaction_type','transaction_num','sign_of_insurance','handing_in_service_charge','retention_fee','royalty_income','royalty_payment'])
+                    ->limit($start, 30)
+                    ->select();
+                $collect = DB::name($tableName)
+                    ->where('groups','like',$group .'%')
+                    ->where($where)
+                    ->where($where1)
+                    ->field('sum(num_of_transactions),sum(transaction_price),sum(transaction_amount),sum(service_charge),sum(handing_in_service_charge),sum(retention_fee),
+                    sum(royalty_income),sum(royalty_payment)')
+                    ->find();
+                $count = DB::name($tableName)
+                    ->where('groups','like',$group .'%')
+                    ->where($where)
+                    ->where($where1)
+                    ->count();
+            }
+        }elseif ($isadmin=='0'&& $tableName=="jinkong_chengjiaobiao"){
+            if(($startDate && $endtDate) || $account || $customerame||$searchGroup){
+                if ($startDate && $endtDate){
+                    if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                        $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                    }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                        $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                    }else{
+                        $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                    }
+                }else{
+                    $where=true;
+                }
+                if ($account && $customerame&& $searchGroup){
+                    $where1=array(
+                        'customer_number'=>$account,
+                        'customer_name'=>$customerame,
+                        'groups'=>$searchGroup
+                    );
+                }elseif ($account&&$searchGroup){
+                    $where1=array(
+                        'customer_number'=>$account,
+                        'groups'=>$searchGroup
+                    );
+                }elseif ($customerame&&$searchGroup){
+                    $where1=array(
+                        'customer_name'=>$customerame,
+                        'groups'=>$searchGroup
+                    );
+                }elseif ($account){
+                    $where1=array(
+                        'customer_number'=>$account
+                    );
+                }elseif ($customerame){
+                    $where1=array(
+                        'customer_name'=>$customerame
+                    );
+                }elseif ($searchGroup){
+                    $where1=array(
+                        'groups'=>$searchGroup
+                    );
+                }else{
+                    $where1=true;
+                }
+                $data = DB::name($tableName)
+                    ->where('groups',$group)
+                    ->where($where)
+                    ->where($where1)
+                    ->order($where3)
+                    ->hidden(['transaction_type','transaction_num','sign_of_insurance','handing_in_service_charge','retention_fee','royalty_income','royalty_payment'])
+                    ->limit($start, 30)
+                    ->select();
+                $collect = DB::name($tableName)
+                    ->where('groups',$group)
+                    ->where($where)
+                    ->where($where1)
+                    ->field('sum(num_of_transactions),sum(transaction_price),sum(transaction_amount),sum(service_charge),sum(handing_in_service_charge),sum(retention_fee),
+                    sum(royalty_income),sum(royalty_payment)')
+                    ->find();
+                $count = DB::name($tableName)
+                    ->where('groups',$group)
+                    ->where($where)
+                    ->where($where1)
+                    ->count();
+            }
         }elseif ($isadmin=='1'){
             //超级管理员
             if ($startDate && $endtDate){
-                $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+                    $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+                }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+                    $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+                }else{
+                    $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+                }
             }else{
                 $where=true;
             }
@@ -2633,6 +2961,13 @@ class Form extends Model
                     ->where($where1)
                     ->field('sum(cash_in),sum(cash_out),sum(cash_in_and_out),sum(number_of_gold_entries),sum(gold_output)')
                     ->find();
+            }elseif ($tableName=='jinkong_chengjiaobiao'){
+                $collect = DB::name($tableName)
+                    ->where($where)
+                    ->where($where1)
+                    ->field('sum(num_of_transactions),sum(transaction_price),sum(transaction_amount),sum(service_charge),sum(handing_in_service_charge),sum(retention_fee),
+                    sum(royalty_income),sum(royalty_payment)')
+                    ->find();
             }
             $count = DB::name($tableName)
                 ->where($where)
@@ -2736,8 +3071,18 @@ class Form extends Model
      * @param $tableName
      * 查询表数据
      */
-    public function getTableDate($tableName) {
-        $tableDate=Db::name($tableName)->select();
+    public function getTableDate($tableName,$startDate,$endtDate) {
+        if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+            $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate";
+        }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+            $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate";
+        }else{
+            $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate";
+        }
+        $tableDate=Db::name($tableName)
+            ->where($where)
+            ->select();
         return $tableDate;
     }
+
 }

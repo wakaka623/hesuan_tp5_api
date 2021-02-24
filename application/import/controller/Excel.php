@@ -89,7 +89,7 @@ class Excel extends Controller
       'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD',
       'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN',
       'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX',
-      'AY', 'AZ'
+      'AY', 'AZ','BA','BB','BC','BD','BE','BF','BG','BH','BI','BJ','BK','BL','BM','BN'
     );
 
     if ($selRowLeng > count($excelRow)) {
@@ -554,16 +554,25 @@ class Excel extends Controller
 
 //        $filename=$time;
         $tableName = request()->post('table_names');
+        $startDate=trim(request()->post('startDate'));
+        $endtDate=trim(request()->post('endDate'));
+        if($startDate&&$endtDate){
+            $startDate1=strtotime($startDate);
+            $endtDate1=strtotime($endtDate);
+            $startDate2=date('Ymd', $startDate1);
+            $endtDate2=date('Ymd', $endtDate1);
+        }
         $form=new Form();
         $Key=$form->getColumns($tableName,$group,$isadmin);
         $indexKey=array_keys($Key);
+//        return var_dump($Key);
         if(empty($filename)) $filename = time();
         if( !is_array($indexKey)) return false;
 
         $header_arr = array('A','B','C','D','E','F','G','H','I','J','K','L','M', 'N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA', 'AB', 'AC', 'AD',
             'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN',
             'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX',
-            'AY', 'AZ');
+            'AY', 'AZ','BA','BB','BC','BD','BE','BF','BG','BH','BI','BJ','BK','BL','BM','BN');
         //初始化PHPExcel()
         $objPHPExcel = new \PHPExcel();
 
@@ -579,7 +588,7 @@ class Excel extends Controller
         //接下来就是写数据到表格里面去
         $objActSheet = $objPHPExcel->getActiveSheet();
         //$startRow = 1;
-        $list1=$form->getTableDate($tableName);
+        $list1=$form->getTableDate($tableName,$startDate2,$endtDate2);
         $list=array_merge(array($Key),$list1);
         foreach ($list as $row) {
             foreach ($indexKey as $key => $value){
@@ -604,6 +613,46 @@ class Excel extends Controller
         $objWriter->save($path."/". $time . '.xls');
         $downUrl = $url . $time . '.xls';
         return $downUrl;
+    }
+
+    /**
+     * @param $tableName
+     * 删除表数据
+     */
+    public function deleteTableDate() {
+        $tableName = request()->post('table_names');
+        $startDate=trim(request()->post('startDate'));
+        $endtDate=trim(request()->post('endDate'));
+        if($startDate&&$endtDate){
+            $startDate1=strtotime($startDate);
+            $endtDate1=strtotime($endtDate);
+            $startDate2=date('Ymd', $startDate1);
+            $endtDate2=date('Ymd', $endtDate1);
+        }
+        if ($tableName=='jinkong_chengjiaobiao'||$tableName=='hengyin_client_funds'||$tableName=='hengyin_transaction'||$tableName=='sanli_client_funds'||$tableName=='sanli_transaction'||$tableName=='ruida_client_funds'||$tableName=='ruida_transaction'){
+            $where="cast(substring(unique_code, 6, 8) as SIGNED)>=$startDate2  AND cast(substring(unique_code, 6, 8) as SIGNED)<=$endtDate2";
+        }elseif ($tableName=='ruida_deposit_and_withdrawal'||$tableName=='huaxin_deposit_and_withdrawal'||$tableName=='jinkong_deposit_and_withdrawal'){
+            $where="cast(substring(unique_code, 7, 8) as SIGNED)>=$startDate2  AND cast(substring(unique_code, 7, 8) as SIGNED)<=$endtDate2";
+        }else{
+            $where="cast(substring(unique_code, 8, 8) as SIGNED)>=$startDate2  AND cast(substring(unique_code, 8, 8) as SIGNED)<=$endtDate2";
+        }
+        $result=Db::name($tableName)
+            ->where($where)
+            ->delete();
+        if($result==0){
+            $error=array(
+                'code'=>'0',
+                'message'=>'删除失败了，在试试呗!'
+            );
+            return json_encode($error);
+        }else{
+            $success=array(
+                'code'=>'1',
+                'message'=>'操作成功',
+                'number'=>$result
+            );
+            return json_encode($success);
+        }
     }
 
   /**
@@ -1291,6 +1340,31 @@ class Excel extends Controller
         $count_collect['cash_in_and_out']=round($collect['sum(cash_in_and_out)']+$count_collect['cash_in_and_out'],2);
         $count_collect['number_of_gold_entries']=round($collect['sum(number_of_gold_entries)']+$count_collect['number_of_gold_entries'],2);
         $count_collect['gold_output']=round($collect['sum(gold_output)']+$count_collect['gold_output'],2);
+        $count=count($data);
+        $data[$count]=$page_collect;
+        $data[$count+1]=$count_collect;
+    }elseif ($tableName=='                                                                                                                                                                                                                                                                                                                                  '){
+        foreach ($data as $key=>$value){
+            $page_collect['unique_code']="当前页合计";//抬头
+            $page_collect['num_of_transactions']=round($value['num_of_transactions']+$page_collect['num_of_transactions'],2);
+            $page_collect['transaction_price']=round($value['transaction_price']+$page_collect['transaction_price'],2);
+            $page_collect['transaction_amount']=round($value['transaction_amount']+$page_collect['transaction_amount'],2);
+            $page_collect['service_charge']=round($value['service_charge']+$page_collect['service_charge'],2);
+            $page_collect['handing_in_service_charge']=round($value['handing_in_service_charge']+$page_collect['handing_in_service_charge'],2);
+            $page_collect['retention_fee']=round($value['retention_fee']+$page_collect['retention_fee'],2);
+            $page_collect['royalty_income']=round($value['royalty_income']+$page_collect['royalty_income'],2);
+            $page_collect['royalty_payment']=round($value['royalty_payment']+$page_collect['royalty_payment'],2);
+        }
+        $collect=$tableData['collect'];
+        $count_collect['unique_code']="所有合计";//抬头
+        $count_collect['num_of_transactions']=round($collect['sum(num_of_transactions)']+$count_collect['num_of_transactions'],2);
+        $count_collect['transaction_price']=round($collect['sum(transaction_price)']+$count_collect['transaction_price'],2);
+        $count_collect['transaction_amount']=round($collect['sum(transaction_amount)']+$count_collect['transaction_amount'],2);
+        $count_collect['service_charge']=round($collect['sum(service_charge)']+$count_collect['service_charge'],2);
+        $count_collect['handing_in_service_charge']=round($collect['sum(handing_in_service_charge)']+$count_collect['handing_in_service_charge'],2);
+        $count_collect['retention_fee']=round($collect['sum(retention_fee)']+$count_collect['retention_fee'],2);
+        $count_collect['royalty_income']=round($collect['sum(royalty_income)']+$count_collect['royalty_income'],2);
+        $count_collect['royalty_payment']=round($collect['sum(royalty_payment)']+$count_collect['royalty_payment'],2);
         $count=count($data);
         $data[$count]=$page_collect;
         $data[$count+1]=$count_collect;
